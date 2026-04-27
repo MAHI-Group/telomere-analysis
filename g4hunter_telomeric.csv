@@ -1,0 +1,51 @@
+species,motif,clade,g4h_mean
+Candida tropicalis,TTACGGATGTCTAACTCTTT,Fungi (Ascomycota),0.05
+Candida albicans,GGTGTACGGATGTCACGATCATT,Fungi (Ascomycota),0.31
+Caenorhabditis briggsae,TTAGGC,Nematode,0.5
+Caenorhabditis elegans,TTAGGC,Nematode,0.5
+Anopheles gambiae,TTAGGC,Insect,0.5
+Kluyveromyces lactis,TTGATTAGGTATGTGGTGT,Fungi (Ascomycota),0.5766666666666667
+Tribolium castaneum,TCAGG,Insect,0.6
+Bombyx mori,TTAGG,Insect,0.8
+Locusta migratoria,TTAGG,Insect,0.8
+Apis mellifera,TTAGG,Insect,0.8
+Yarrowia lipolytica,GGGTTAGTCA,Fungi (Ascomycota),0.9
+Schizosaccharomyces pombe,TTACAGGG,Fungi (Ascomycota),1.0
+Chlamydomonas reinhardtii,TTTTAGGG,Green alga,1.125
+Saccharomyces castellii,TCTGGGTG,Fungi (Ascomycota),1.125
+Saccharomyces cerevisiae,TGTGGGTGTGGTGTG,Fungi (Ascomycota),1.1333333333333333
+Pichia pastoris,TTGGGTGCTGTGTGGGT,Fungi (Ascomycota),1.1816666666666666
+Plasmodium falciparum,TTTAGGG,Other protist,1.2766666666666666
+Magnaporthe oryzae,TTAGGG,Fungi (Ascomycota),1.5
+Aspergillus fumigatus,TTAGGG,Fungi (Ascomycota),1.5
+Aspergillus nidulans,TTAGGG,Fungi (Ascomycota),1.5
+Fusarium oxysporum,TTAGGG,Fungi (Ascomycota),1.5
+Cryptococcus neoformans,TTAGGG,Fungi (Basidiomycota),1.5
+Trypanosoma cruzi,TTAGGG,Kinetoplastid,1.5
+Neurospora crassa,TTAGGG,Fungi (Ascomycota),1.5
+Ustilago maydis,TTAGGG,Fungi (Basidiomycota),1.5
+Trichoderma reesei,TTAGGG,Fungi (Ascomycota),1.5
+Crassostrea gigas,TTAGGG,Mollusc,1.5
+Strongylocentrotus purpuratus,TTAGGG,Echinoderm,1.5
+Coprinus cinereus,TTAGGG,Fungi (Basidiomycota),1.5
+Trypanosoma brucei,TTAGGG,Kinetoplastid,1.5
+Paramecium tetraurelia,TTGGGT,Ciliate,1.5
+Leishmania major,TTAGGG,Kinetoplastid,1.5
+Danio rerio,TTAGGG,Vertebrate,1.5
+Petromyzon marinus,TTAGGG,Vertebrate,1.5
+Mus musculus,TTAGGG,Vertebrate,1.5
+Bos taurus,TTAGGG,Vertebrate,1.5
+Ornithorhynchus anatinus,TTAGGG,Vertebrate,1.5
+Gallus gallus,TTAGGG,Vertebrate,1.5
+Daphnia pulex,TTAGGG,Crustacean,1.5
+Hydra vulgaris,TTAGGG,Cnidarian,1.5
+Nematostella vectensis,TTAGGG,Cnidarian,1.5
+Homo sapiens,TTAGGG,Vertebrate,1.5
+Anolis carolinensis,TTAGGG,Vertebrate,1.5
+Xenopus laevis,TTAGGG,Vertebrate,1.5
+Giardia lamblia,TAGGG,Other protist,1.8
+Candida glabrata,GGGGTCTGGGTGCTG,Fungi (Ascomycota),1.8616666666666666
+Oxytricha nova,TTTTGGGG,Ciliate,2.0
+Stylonychia mytilus,TTTTGGGG,Ciliate,2.0
+Euplotes aediculatus,TTTTGGGG,Ciliate,2.0
+Tetrahymena thermophila,TTGGGG,Ciliate,2.6666666666666665
