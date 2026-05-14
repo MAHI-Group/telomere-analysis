@@ -168,7 +168,9 @@ fig = plt.figure(figsize=(15, 20))
 gs = fig.add_gridspec(3, 1, height_ratios=[1.4, 1, 0.85], hspace=0.2)
 
 ax1 = fig.add_subplot(gs[0])
-clade_colors = {c: plt.get_cmap("tab10")(i)
+#clade_colors = {c: plt.get_cmap("tab10")(i)
+#                for i, c in enumerate(sorted(tel_df["clade"].unique()))}
+clade_colors = {c: plt.get_cmap("tab20")(i)
                 for i, c in enumerate(sorted(tel_df["clade"].unique()))}
 y_pos = np.arange(len(tel_df))
 ax1.barh(y_pos, tel_df["g4h_mean"],
@@ -187,8 +189,15 @@ ax1.legend(handles, clade_colors.keys(), loc="lower right",
            fontsize=7, frameon=False, ncol=2)
 
 ax2 = fig.add_subplot(gs[1])
-colors = {"WT": "black", "C228T": "#d95f02",
-          "C250T": "#1b9e77", "C228T + C250T": "#7570b3"}
+#colors = {"WT": "black", "C228T": "#d95f02",
+#          "C250T": "#1b9e77", "C228T + C250T": "#7570b3"}
+#colors = {"WT": "#000000",          # black
+#          "C228T": "#E69F00",        # orange
+#          "C250T": "#0072B2",        # blue
+#          "C228T + C250T": "#CC79A7"}  # magenta
+
+colors={"WT":"black", "C228T":"#B85042", "C250T":"#2C5F2D", "C228T + C250T":"#065A82"}
+
 for label, track in tracks.items():
     ax2.plot(x, track, label=label, color=colors[label],
              lw=1.8 if label == "WT" else 1.2,
