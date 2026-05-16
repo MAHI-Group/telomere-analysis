@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModelForMaskedLM
 from umap import UMAP
 from matplotlib.lines import Line2D
 from adjustText import adjust_text
+import os
 
 SPECIES = [
     # Ciliates
@@ -69,54 +70,59 @@ SPECIES = [
     ("Petromyzon marinus", "TTAGGG", "Vertebrate"),
 ]
 
-TARGET_LEN = 1200
-MODEL = "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species"
+if not os.path.isfile("telomere_umap.csv"):
+    print("The UMAP embedding file does not exist. Extracting embeddings from NT v2...")
 
-def tile(motif, length=TARGET_LEN):
-    return (motif * (length // len(motif) + 1))[:length]
+    TARGET_LEN = 1200
+    MODEL = "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species"
+    
+    def tile(motif, length=TARGET_LEN):
+        return (motif * (length // len(motif) + 1))[:length]
+    
+    df = pd.DataFrame(SPECIES, columns=["species", "motif", "group"])
+    df["sequence"] = df["motif"].apply(tile)
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    tokenizer = AutoTokenizer.from_pretrained(MODEL, trust_remote_code=True)
+    model = AutoModelForMaskedLM.from_pretrained(
+        MODEL, trust_remote_code=True
+    ).to(device).eval()
+    
+    @torch.inference_mode()
+    def embed(seqs, batch_size=4):
+        out = []
+        for i in range(0, len(seqs), batch_size):
+            tok = tokenizer.batch_encode_plus(
+                seqs[i:i+batch_size], return_tensors="pt",
+                padding="longest", truncation=True, max_length=2048
+            )
+            input_ids = tok["input_ids"].to(device)
+            attn = (input_ids != tokenizer.pad_token_id).to(device)
+            with torch.autocast(device_type="cuda", dtype=torch.float16):
+                outs = model(input_ids, attention_mask=attn,
+                             encoder_attention_mask=attn, output_hidden_states=True)
+            h = outs.hidden_states[-1]
+            mask = attn.unsqueeze(-1).float()
+            pooled = (h.float() * mask).sum(1) / mask.sum(1)
+            out.append(pooled.cpu().numpy())
+        return np.concatenate(out)
+    
+    embs = embed(df["sequence"].tolist())
+    np.save("telomere_embeddings.npy", embs)
 
-df = pd.DataFrame(SPECIES, columns=["species", "motif", "group"])
-df["sequence"] = df["motif"].apply(tile)
+    # UMAP
+    reducer = UMAP(n_neighbors=15, min_dist=0.6, metric="cosine",
+                   spread=1.5, random_state=42)
+    xy = reducer.fit_transform(embs)
+    df["umap_1"], df["umap_2"] = xy[:, 0], xy[:, 1]
+    df.to_csv("telomere_umap.csv", index=False)
+else:
+    print("UMAP embedding file exists. Loading it into a variable.")
+    df = pd.read_csv("telomere_umap.csv")
+    #df = df[df["group"] != "Plant"].reset_index(drop=True)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-tokenizer = AutoTokenizer.from_pretrained(MODEL, trust_remote_code=True)
-model = AutoModelForMaskedLM.from_pretrained(
-    MODEL, trust_remote_code=True
-).to(device).eval()
-
-@torch.inference_mode()
-def embed(seqs, batch_size=4):
-    out = []
-    for i in range(0, len(seqs), batch_size):
-        tok = tokenizer.batch_encode_plus(
-            seqs[i:i+batch_size], return_tensors="pt",
-            padding="longest", truncation=True, max_length=2048
-        )
-        input_ids = tok["input_ids"].to(device)
-        attn = (input_ids != tokenizer.pad_token_id).to(device)
-        with torch.autocast(device_type="cuda", dtype=torch.float16):
-            outs = model(input_ids, attention_mask=attn,
-                         encoder_attention_mask=attn, output_hidden_states=True)
-        h = outs.hidden_states[-1]
-        mask = attn.unsqueeze(-1).float()
-        pooled = (h.float() * mask).sum(1) / mask.sum(1)
-        out.append(pooled.cpu().numpy())
-    return np.concatenate(out)
-
-embs = embed(df["sequence"].tolist())
-np.save("telomere_embeddings.npy", embs)
-
-reducer = UMAP(n_neighbors=15, min_dist=0.6, metric="cosine",
-               spread=1.5, random_state=42)
-xy = reducer.fit_transform(embs)
-df["umap_1"], df["umap_2"] = xy[:, 0], xy[:, 1]
-df.to_csv("telomere_umap.csv", index=False)
-
-#UMAP
-df = pd.read_csv("telomere_umap.csv")
-#df = df[df["group"] != "Plant"].reset_index(drop=True)
-
+#plotting
 agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
          .agg(species=("species", list),
               groups=("group", lambda g: sorted(set(g))),
@@ -144,13 +150,13 @@ for _, r in agg.iterrows():
                edgecolor="black", linewidth=0.6, alpha=0.9, zorder=3)
     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
-                         fontsize=9, family="monospace"))
+                         fontsize=11, family="monospace"))
 
 adjust_text(
     texts, ax=ax,
     arrowprops=dict(arrowstyle="-", color="grey", lw=0.5,
                     shrinkA=8, shrinkB=4, connectionstyle="arc3"),
-    expand_points=(1.6, 1.6), expand_text=(1.2, 1.2),
+    expand_points=(1.6, 1.6), expand_text=(1.25, 1.25),
 )
 
 ax.set_xlabel("UMAP 1")
@@ -177,13 +183,13 @@ def wrap(species_list, width=42):
         lines.append(current)
     return lines
 
-ax_legend.text(0.0, 1.0, "Motif → species", fontsize=12, weight="bold",
+ax_legend.text(0.0, 1.0, r"Motif $\rightarrow$ species", fontsize=12, weight="bold",
                transform=ax_legend.transAxes)
 
 y = 0.96
 line_height = 0.030
 for _, r in agg.iterrows():
-    ax_legend.text(0.0, y, r["motif"], fontsize=9, family="monospace",
+    ax_legend.text(0.0, y, r["motif"], fontsize=10, family="monospace",
                    weight="bold", color=color_map[r["color_group"]],
                    transform=ax_legend.transAxes, va="top")
     species_lines = wrap(r["species"], width=42)
