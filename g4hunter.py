@@ -30,37 +30,8 @@ def g4hunter_window(seq, window=25):
     kernel = np.ones(window) / window
     return np.convolve(s, kernel, mode="valid")
 
-# ---------- (i) Telomeric repeats ----------
-# SPECIES = [
-#     ("Tetrahymena thermophila", "TTGGGG", "Ciliate"),
-#     ("Oxytricha nova", "TTTTGGGG", "Ciliate"),
-#     ("Paramecium tetraurelia", "TTGGGT", "Ciliate"),
-#     ("Euplotes aediculatus", "TTTTGGGG", "Ciliate"),
-#     ("Stylonychia mytilus", "TTTTGGGG", "Ciliate"),
-#     ("Trypanosoma brucei", "TTAGGG", "Kinetoplastid"),
-#     ("Leishmania major", "TTAGGG", "Kinetoplastid"),
-#     ("Saccharomyces cerevisiae", "TGTGGGTGTGGTGTG", "Fungi (Asco.)"),
-#     ("Schizosaccharomyces pombe", "TTACAGGG", "Fungi (Asco.)"),
-#     ("Candida albicans", "GGTGTACGGATGTCACGATCATT", "Fungi (Asco.)"),
-#     ("Candida glabrata", "GGGGTCTGGGTGCTG", "Fungi (Asco.)"),
-#     ("Neurospora crassa", "TTAGGG", "Fungi (Asco.)"),
-#     ("Aspergillus nidulans", "TTAGGG", "Fungi (Asco.)"),
-#     ("Ustilago maydis", "TTAGGG", "Fungi (Basidio.)"),
-#     ("Chlamydomonas reinhardtii", "TTTTAGGG", "Green alga"),
-#     ("Caenorhabditis elegans", "TTAGGC", "Nematode"),
-#     ("Bombyx mori", "TTAGG", "Insect"),
-#     ("Apis mellifera", "TTAGG", "Insect"),
-#     ("Tribolium castaneum", "TCAGG", "Insect"),
-#     ("Locusta migratoria", "TTAGG", "Insect"),
-#     ("Strongylocentrotus purpuratus", "TTAGGG", "Echinoderm"),
-#     ("Crassostrea gigas", "TTAGGG", "Mollusc"),
-#     ("Homo sapiens", "TTAGGG", "Vertebrate"),
-#     ("Mus musculus", "TTAGGG", "Vertebrate"),
-#     ("Gallus gallus", "TTAGGG", "Vertebrate"),
-#     ("Danio rerio", "TTAGGG", "Vertebrate"),
-#     ("Xenopus laevis", "TTAGGG", "Vertebrate"),
-# ]
 
+# species list for our paper
 SPECIES = [
     # Ciliates
     ("Tetrahymena thermophila", "TTGGGG", "Ciliate"),
@@ -163,13 +134,12 @@ tracks = {
 }
 x = np.arange(len(tracks["WT"])) + WIN // 2
 
-# ---------- Plot ----------
+
+# plotting -- version 2
 fig = plt.figure(figsize=(15, 20))
-gs = fig.add_gridspec(3, 1, height_ratios=[1.4, 1, 0.85], hspace=0.2)
+gs = fig.add_gridspec(3, 1, height_ratios=[1.9, 1, 0.85], hspace=0.25)
 
 ax1 = fig.add_subplot(gs[0])
-#clade_colors = {c: plt.get_cmap("tab10")(i)
-#                for i, c in enumerate(sorted(tel_df["clade"].unique()))}
 clade_colors = {c: plt.get_cmap("tab20")(i)
                 for i, c in enumerate(sorted(tel_df["clade"].unique()))}
 y_pos = np.arange(len(tel_df))
@@ -178,40 +148,39 @@ ax1.barh(y_pos, tel_df["g4h_mean"],
          edgecolor="black", linewidth=0.6)
 ax1.set_yticks(y_pos)
 ax1.set_yticklabels([f"{r.species}  ({r.motif})" for r in tel_df.itertuples()],
-                    fontsize=8, style="italic")
+                    fontsize=9, style="italic")
 ax1.axvline(1.0, color="red", lw=0.8, ls="--", alpha=0.7)
 ax1.axvline(-1.0, color="red", lw=0.8, ls="--", alpha=0.7)
-ax1.set_xlabel("G4Hunter mean score (G-rich strand)")
+ax1.set_xlabel("G4Hunter mean score (G-rich strand)", fontsize=16)
+ax1.tick_params(axis="x", labelsize=13)
 ax1.set_title("(i) Predicted G4-forming propensity of tiled telomeric repeats",
-              loc="left", fontsize=11)
+              loc="left", fontsize=17)
 handles = [plt.Rectangle((0, 0), 1, 1, color=col) for col in clade_colors.values()]
 ax1.legend(handles, clade_colors.keys(), loc="lower right",
-           fontsize=7, frameon=False, ncol=2)
+           fontsize=12, frameon=True, edgecolor="black", framealpha=0.95,
+           ncol=2, title="Clade", title_fontsize=13)
 
 ax2 = fig.add_subplot(gs[1])
-#colors = {"WT": "black", "C228T": "#d95f02",
-#          "C250T": "#1b9e77", "C228T + C250T": "#7570b3"}
-#colors = {"WT": "#000000",          # black
-#          "C228T": "#E69F00",        # orange
-#          "C250T": "#0072B2",        # blue
-#          "C228T + C250T": "#CC79A7"}  # magenta
-
-colors={"WT":"black", "C228T":"#B85042", "C250T":"#2C5F2D", "C228T + C250T":"#065A82"}
+colors = {"WT": "black", "C228T": "#B85042",
+          "C250T": "#2C5F2D", "C228T + C250T": "#065A82"}
 
 for label, track in tracks.items():
     ax2.plot(x, track, label=label, color=colors[label],
-             lw=1.8 if label == "WT" else 1.2,
+             lw=2.2 if label == "WT" else 1.5,
              alpha=1.0 if label == "WT" else 0.85)
 ax2.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
 ax2.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
 ax2.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
 ax2.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
 ax2.set_xlabel(f"Position in hTERT promoter window "
-               f"(chr5:{htert['start']}-{htert['end']}, hg38, plus strand)")
-ax2.set_ylabel("G4Hunter score (25 bp window)")
+               f"(chr5:{htert['start']}-{htert['end']}, hg38, plus strand)",
+               fontsize=16)
+ax2.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
+ax2.tick_params(axis="both", labelsize=13)
 ax2.set_title("(ii) G4-forming potential across the hTERT proximal promoter "
-              "with C228T / C250T overlays", loc="left", fontsize=11)
-ax2.legend(loc="lower right", fontsize=8, frameon=False, ncol=4)
+              "with C228T / C250T overlays", loc="left", fontsize=17)
+ax2.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
+           framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
 
 ax3 = fig.add_subplot(gs[2])
 lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
@@ -219,16 +188,90 @@ hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
 mask = (x >= lo) & (x <= hi)
 for label, track in tracks.items():
     ax3.plot(x[mask], track[mask], label=label, color=colors[label],
-             lw=1.8 if label == "WT" else 1.2, marker="o", markersize=3,
+             lw=2.2 if label == "WT" else 1.5, marker="o", markersize=4,
              alpha=1.0 if label == "WT" else 0.85)
 ax3.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
 ax3.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
 ax3.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
-ax3.set_xlabel("Position (bp, plus strand)")
-ax3.set_ylabel("G4Hunter")
+ax3.set_xlabel("Position (bp, plus strand)", fontsize=16)
+ax3.set_ylabel("G4Hunter", fontsize=16)
+ax3.tick_params(axis="both", labelsize=13)
 ax3.set_title("(iii) Zoom on the C228T / C250T hotspot region",
-              loc="left", fontsize=11)
+              loc="left", fontsize=17)
+ax3.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
+           framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
 
 plt.savefig("FigB_g4hunter.pdf", bbox_inches="tight")
-plt.savefig("FigB_g4hunter.png", dpi=300, bbox_inches="tight")
+plt.savefig("FigB_g4hunter.png", dpi=600, bbox_inches="tight")
 print(tel_df.to_string(index=False))
+
+
+# # ---------- Plotting -- version 1 ----------
+# fig = plt.figure(figsize=(15, 20))
+# gs = fig.add_gridspec(3, 1, height_ratios=[1.4, 1, 0.85], hspace=0.2)
+
+# ax1 = fig.add_subplot(gs[0])
+# #clade_colors = {c: plt.get_cmap("tab10")(i)
+# #                for i, c in enumerate(sorted(tel_df["clade"].unique()))}
+# clade_colors = {c: plt.get_cmap("tab20")(i)
+#                 for i, c in enumerate(sorted(tel_df["clade"].unique()))}
+# y_pos = np.arange(len(tel_df))
+# ax1.barh(y_pos, tel_df["g4h_mean"],
+#          color=[clade_colors[c] for c in tel_df["clade"]],
+#          edgecolor="black", linewidth=0.6)
+# ax1.set_yticks(y_pos)
+# ax1.set_yticklabels([f"{r.species}  ({r.motif})" for r in tel_df.itertuples()],
+#                     fontsize=8, style="italic")
+# ax1.axvline(1.0, color="red", lw=0.8, ls="--", alpha=0.7)
+# ax1.axvline(-1.0, color="red", lw=0.8, ls="--", alpha=0.7)
+# ax1.set_xlabel("G4Hunter mean score (G-rich strand)")
+# ax1.set_title("(i) Predicted G4-forming propensity of tiled telomeric repeats",
+#               loc="left", fontsize=11)
+# handles = [plt.Rectangle((0, 0), 1, 1, color=col) for col in clade_colors.values()]
+# ax1.legend(handles, clade_colors.keys(), loc="lower right",
+#            fontsize=7, frameon=False, ncol=2)
+
+# ax2 = fig.add_subplot(gs[1])
+# #colors = {"WT": "black", "C228T": "#d95f02",
+# #          "C250T": "#1b9e77", "C228T + C250T": "#7570b3"}
+# #colors = {"WT": "#000000",          # black
+# #          "C228T": "#E69F00",        # orange
+# #          "C250T": "#0072B2",        # blue
+# #          "C228T + C250T": "#CC79A7"}  # magenta
+
+# colors={"WT":"black", "C228T":"#B85042", "C250T":"#2C5F2D", "C228T + C250T":"#065A82"}
+
+# for label, track in tracks.items():
+#     ax2.plot(x, track, label=label, color=colors[label],
+#              lw=1.8 if label == "WT" else 1.2,
+#              alpha=1.0 if label == "WT" else 0.85)
+# ax2.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax2.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax2.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
+# ax2.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
+# ax2.set_xlabel(f"Position in hTERT promoter window "
+#                f"(chr5:{htert['start']}-{htert['end']}, hg38, plus strand)")
+# ax2.set_ylabel("G4Hunter score (25 bp window)")
+# ax2.set_title("(ii) G4-forming potential across the hTERT proximal promoter "
+#               "with C228T / C250T overlays", loc="left", fontsize=11)
+# ax2.legend(loc="lower right", fontsize=8, frameon=False, ncol=4)
+
+# ax3 = fig.add_subplot(gs[2])
+# lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
+# hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
+# mask = (x >= lo) & (x <= hi)
+# for label, track in tracks.items():
+#     ax3.plot(x[mask], track[mask], label=label, color=colors[label],
+#              lw=1.8 if label == "WT" else 1.2, marker="o", markersize=3,
+#              alpha=1.0 if label == "WT" else 0.85)
+# ax3.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
+# ax3.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
+# ax3.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax3.set_xlabel("Position (bp, plus strand)")
+# ax3.set_ylabel("G4Hunter")
+# ax3.set_title("(iii) Zoom on the C228T / C250T hotspot region",
+#               loc="left", fontsize=11)
+
+# plt.savefig("FigB_g4hunter.pdf", bbox_inches="tight")
+# plt.savefig("FigB_g4hunter.png", dpi=300, bbox_inches="tight")
+# print(tel_df.to_string(index=False))

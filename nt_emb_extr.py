@@ -117,12 +117,13 @@ if not os.path.isfile("telomere_umap.csv"):
     xy = reducer.fit_transform(embs)
     df["umap_1"], df["umap_2"] = xy[:, 0], xy[:, 1]
     df.to_csv("telomere_umap.csv", index=False)
-else:
-    print("UMAP embedding file exists. Loading it into a variable.")
-    df = pd.read_csv("telomere_umap.csv")
-    #df = df[df["group"] != "Plant"].reset_index(drop=True)
+else:    
+     print("UMAP embedding file exists. Loading it into a variable.")
+     df = pd.read_csv("telomere_umap.csv")
+     #df = df[df["group"] != "Plant"].reset_index(drop=True)
 
-#plotting
+
+# Plotting --verion 2
 agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
          .agg(species=("species", list),
               groups=("group", lambda g: sorted(set(g))),
@@ -132,72 +133,121 @@ agg["color_group"] = agg.apply(
     axis=1,
 )
 agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
-
 groups = sorted(agg["color_group"].unique())
 cmap = plt.get_cmap("tab20")
 color_map = {g: cmap(i) for i, g in enumerate(groups)}
 
-fig = plt.figure(figsize=(17, 9))
-gs = fig.add_gridspec(1, 2, width_ratios=[3, 2.2], wspace=0.05)
-ax = fig.add_subplot(gs[0])
-ax_legend = fig.add_subplot(gs[1])
-ax_legend.axis("off")
+fig, ax = plt.subplots(figsize=(11, 9))
 
 texts = []
 for _, r in agg.iterrows():
-    ax.scatter(r["umap_1"], r["umap_2"], s=140,
+    ax.scatter(r["umap_1"], r["umap_2"], s=180,
                color=color_map[r["color_group"]],
-               edgecolor="black", linewidth=0.6, alpha=0.9, zorder=3)
+               edgecolor="black", linewidth=0.8, alpha=0.9, zorder=3)
     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
-                         fontsize=11, family="monospace"))
+                         fontsize=15, family="monospace"))
 
 adjust_text(
     texts, ax=ax,
-    arrowprops=dict(arrowstyle="-", color="grey", lw=0.5,
-                    shrinkA=8, shrinkB=4, connectionstyle="arc3"),
-    expand_points=(1.6, 1.6), expand_text=(1.25, 1.25),
+    arrowprops=dict(arrowstyle="-", color="grey", lw=0.6,
+                    shrinkA=20, shrinkB=6, connectionstyle="arc3"),
+    expand_points=(1.8, 1.8), expand_text=(1.4, 1.4),
 )
 
-ax.set_xlabel("UMAP 1")
-ax.set_ylabel("UMAP 2")
+ax.set_xlabel("UMAP 1", fontsize=14)
+ax.set_ylabel("UMAP 2", fontsize=14)
+ax.tick_params(axis="both", labelsize=14)
 ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
-             "(Nucleotide Transformer v2, 500M, multi-species)")
+             "(Nucleotide Transformer v2, 500M, multi-species)",
+             fontsize=14)
 
 handles = [Line2D([0], [0], marker="o", color="w",
                   markerfacecolor=color_map[g], markeredgecolor="black",
-                  markersize=9, label=g) for g in groups]
-ax.legend(handles=handles, loc="lower left", fontsize=8,
-          frameon=False, title="Clade", title_fontsize=9)
-
-def wrap(species_list, width=42):
-    lines, current = [], ""
-    for s in species_list:
-        candidate = s if not current else current + ", " + s
-        if len(candidate) > width and current:
-            lines.append(current)
-            current = s
-        else:
-            current = candidate
-    if current:
-        lines.append(current)
-    return lines
-
-ax_legend.text(0.0, 1.0, r"Motif $\rightarrow$ species", fontsize=12, weight="bold",
-               transform=ax_legend.transAxes)
-
-y = 0.96
-line_height = 0.030
-for _, r in agg.iterrows():
-    ax_legend.text(0.0, y, r["motif"], fontsize=10, family="monospace",
-                   weight="bold", color=color_map[r["color_group"]],
-                   transform=ax_legend.transAxes, va="top")
-    species_lines = wrap(r["species"], width=42)
-    for j, line in enumerate(species_lines):
-        ax_legend.text(0.40, y - j * line_height, line, fontsize=8,
-                       style="italic", transform=ax_legend.transAxes,
-                       va="top")
-    y -= line_height * (len(species_lines) + 0.4)
+                  markersize=12, label=g) for g in groups]
+ax.legend(handles=handles, loc="lower left", fontsize=14,
+          frameon=False, title="Clade", title_fontsize=14)
 
 plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
-plt.savefig("FigA_telomere_umap.png", dpi=300, bbox_inches="tight")
+plt.savefig("FigA_telomere_umap.png", dpi=600, bbox_inches="tight")
+
+    
+# #plotting -- version 1
+# agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
+#          .agg(species=("species", list),
+#               groups=("group", lambda g: sorted(set(g))),
+#               n=("species", "count")))
+# agg["color_group"] = agg.apply(
+#     lambda r: r["groups"][0] if len(r["groups"]) == 1 else "Cross-clade",
+#     axis=1,
+# )
+# agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
+
+# groups = sorted(agg["color_group"].unique())
+# cmap = plt.get_cmap("tab20")
+# color_map = {g: cmap(i) for i, g in enumerate(groups)}
+
+# fig = plt.figure(figsize=(17, 9))
+# gs = fig.add_gridspec(1, 2, width_ratios=[3, 2.2], wspace=0.05)
+# ax = fig.add_subplot(gs[0])
+# ax_legend = fig.add_subplot(gs[1])
+# ax_legend.axis("off")
+
+# texts = []
+# for _, r in agg.iterrows():
+#     ax.scatter(r["umap_1"], r["umap_2"], s=140,
+#                color=color_map[r["color_group"]],
+#                edgecolor="black", linewidth=0.6, alpha=0.9, zorder=3)
+#     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
+#     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
+#                          fontsize=11, family="monospace"))
+
+# adjust_text(
+#     texts, ax=ax,
+#     arrowprops=dict(arrowstyle="-", color="grey", lw=0.5,
+#                     shrinkA=8, shrinkB=4, connectionstyle="arc3"),
+#     expand_points=(1.6, 1.6), expand_text=(1.25, 1.25),
+# )
+
+# ax.set_xlabel("UMAP 1")
+# ax.set_ylabel("UMAP 2")
+# ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
+#              "(Nucleotide Transformer v2, 500M, multi-species)")
+
+# handles = [Line2D([0], [0], marker="o", color="w",
+#                   markerfacecolor=color_map[g], markeredgecolor="black",
+#                   markersize=9, label=g) for g in groups]
+# ax.legend(handles=handles, loc="lower left", fontsize=8,
+#           frameon=False, title="Clade", title_fontsize=9)
+
+# def wrap(species_list, width=42):
+#     lines, current = [], ""
+#     for s in species_list:
+#         candidate = s if not current else current + ", " + s
+#         if len(candidate) > width and current:
+#             lines.append(current)
+#             current = s
+#         else:
+#             current = candidate
+#     if current:
+#         lines.append(current)
+#     return lines
+
+# ax_legend.text(0.0, 1.0, r"Motif $\rightarrow$ species", fontsize=12, weight="bold",
+#                transform=ax_legend.transAxes)
+
+# y = 0.96
+# line_height = 0.030
+# for _, r in agg.iterrows():
+#     ax_legend.text(0.0, y, r["motif"], fontsize=10, family="monospace",
+#                    weight="bold", color=color_map[r["color_group"]],
+#                    transform=ax_legend.transAxes, va="top")
+#     species_lines = wrap(r["species"], width=42)
+#     for j, line in enumerate(species_lines):
+#         ax_legend.text(0.40, y - j * line_height, line, fontsize=8,
+#                        style="italic", transform=ax_legend.transAxes,
+#                        va="top")
+#     y -= line_height * (len(species_lines) + 0.4)
+
+# plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
+# plt.savefig("FigA_telomere_umap.png", dpi=300, bbox_inches="tight")
