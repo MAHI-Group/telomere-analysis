@@ -123,7 +123,29 @@ else:
      #df = df[df["group"] != "Plant"].reset_index(drop=True)
 
 
-# Plotting --verion 2
+# plotting -version3
+
+from matplotlib.patches import Ellipse
+import textwrap
+
+clusters = {
+    "C1": ["TTAGGG"],
+    "C2": ["TTAGGC", "TTGGGG"],
+    "C3": ["TGTGGGTGTGGTGTG", "TCTGGGTG", "GGTGTACGGATGTCACGATCATT",
+           "GGGGTCTGGGTGCTG", "TTACGGATGTCTAACTCTTT",
+           "TTGATTAGGTATGTGGTGT", "GGGTTAGTCA", "TTGGGTGCTGTGTGGGT",
+           "TTTTGGGG", "TTGGGT",
+           "TTACAGGG", "TTTTAGGG", "TTTAGGG"],
+    "C4": ["TTAGG", "TCAGG", "TAGGG"],
+}
+
+cluster_sublabels = {
+    "C1": "TTAGGG",
+    "C2": "TTAGGC",
+    "C3": "Heterogeneous (see Suppl.)",
+    "C4": "TTAGG / TCAGG",
+}
+
 agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
          .agg(species=("species", list),
               groups=("group", lambda g: sorted(set(g))),
@@ -137,39 +159,123 @@ groups = sorted(agg["color_group"].unique())
 cmap = plt.get_cmap("tab20")
 color_map = {g: cmap(i) for i, g in enumerate(groups)}
 
-fig, ax = plt.subplots(figsize=(11, 9))
+fig, ax = plt.subplots(figsize=(14, 10))
 
-texts = []
 for _, r in agg.iterrows():
-    ax.scatter(r["umap_1"], r["umap_2"], s=180,
+    ax.scatter(r["umap_1"], r["umap_2"], s=200,
                color=color_map[r["color_group"]],
                edgecolor="black", linewidth=0.8, alpha=0.9, zorder=3)
-    label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
-    texts.append(ax.text(r["umap_1"], r["umap_2"], label,
-                         fontsize=15, family="monospace"))
 
-adjust_text(
-    texts, ax=ax,
-    arrowprops=dict(arrowstyle="-", color="grey", lw=0.6,
-                    shrinkA=20, shrinkB=6, connectionstyle="arc3"),
-    expand_points=(1.8, 1.8), expand_text=(1.4, 1.4),
-)
+def draw_cluster(ax, coords, label, sublabel=None, color="dimgray", pad=0.4):
+    coords = np.asarray(coords, dtype=float)
+    mean = coords.mean(axis=0)
+    if len(coords) == 1:
+        width = height = 2 * pad
+        angle = 0.0
+    elif len(coords) == 2:
+        diff = coords[1] - coords[0]
+        angle = np.degrees(np.arctan2(diff[1], diff[0]))
+        width = np.linalg.norm(diff) + 2 * pad
+        height = 2 * pad
+    else:
+        cov = np.cov(coords.T)
+        eigvals, eigvecs = np.linalg.eigh(cov)
+        order = eigvals.argsort()[::-1]
+        eigvals, eigvecs = eigvals[order], eigvecs[:, order]
+        angle = np.degrees(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
+        proj = (coords - mean) @ eigvecs
+        a0 = np.abs(proj[:, 0]).max()
+        b0 = np.abs(proj[:, 1]).max()
+        scale = np.sqrt(((proj[:, 0] / a0) ** 2 +
+                         (proj[:, 1] / b0) ** 2).max())
+        a = a0 * scale + pad
+        b = b0 * scale + pad
+        width, height = 2 * a, 2 * b
+        
+    ell = Ellipse(mean, width=width, height=height, angle=angle,
+                  facecolor="none", edgecolor=color, lw=1.8, ls="--", zorder=2)
+    ax.add_patch(ell)
+    theta = np.radians(angle)
+    y_top = np.sqrt((width / 2 * np.sin(theta)) ** 2 +
+                    (height / 2 * np.cos(theta)) ** 2)
+    display = f"{label}: {sublabel}" if sublabel else label
+    ax.text(mean[0], mean[1] + y_top + 0.15, display,
+            fontsize=16, weight="bold", ha="center", va="bottom",
+            color=color, zorder=4)
 
-ax.set_xlabel("UMAP 1", fontsize=14)
-ax.set_ylabel("UMAP 2", fontsize=14)
+for cname, motif_list in clusters.items():
+    rows = agg[agg["motif"].isin(motif_list)]
+    if len(rows) == 0:
+        continue
+    draw_cluster(ax, rows[["umap_1", "umap_2"]].values,
+                 cname, sublabel=cluster_sublabels.get(cname))
+
+ax.set_xlabel("UMAP 1", fontsize=18)
+ax.set_ylabel("UMAP 2", fontsize=18)
 ax.tick_params(axis="both", labelsize=14)
 ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
              "(Nucleotide Transformer v2, 500M, multi-species)",
-             fontsize=14)
+             fontsize=18)
 
 handles = [Line2D([0], [0], marker="o", color="w",
                   markerfacecolor=color_map[g], markeredgecolor="black",
-                  markersize=12, label=g) for g in groups]
-ax.legend(handles=handles, loc="lower left", fontsize=14,
-          frameon=False, title="Clade", title_fontsize=14)
+                  markersize=10, label=g) for g in groups]
 
-plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
-plt.savefig("FigA_telomere_umap.png", dpi=600, bbox_inches="tight")
+ax.legend(handles=handles, loc="lower left", fontsize=16,
+          frameon=False, title="Clade", title_fontsize=16)
+
+plt.savefig("FigA_telomere_umap_v2.pdf", bbox_inches="tight")
+plt.savefig("FigA_telomere_umap_v2.png", dpi=600, bbox_inches="tight")
+
+
+
+# # Plotting --verion 2
+# agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
+#          .agg(species=("species", list),
+#               groups=("group", lambda g: sorted(set(g))),
+#               n=("species", "count")))
+# agg["color_group"] = agg.apply(
+#     lambda r: r["groups"][0] if len(r["groups"]) == 1 else "Cross-clade",
+#     axis=1,
+# )
+# agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
+# groups = sorted(agg["color_group"].unique())
+# cmap = plt.get_cmap("tab20")
+# color_map = {g: cmap(i) for i, g in enumerate(groups)}
+
+# fig, ax = plt.subplots(figsize=(11, 9))
+
+# texts = []
+# for _, r in agg.iterrows():
+#     ax.scatter(r["umap_1"], r["umap_2"], s=180,
+#                color=color_map[r["color_group"]],
+#                edgecolor="black", linewidth=0.8, alpha=0.9, zorder=3)
+#     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
+#     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
+#                          fontsize=15, family="monospace"))
+
+# adjust_text(
+#     texts, ax=ax,
+#     arrowprops=dict(arrowstyle="-", color="grey", lw=0.6,
+#                     shrinkA=20, shrinkB=6, connectionstyle="arc3"),
+#     expand_points=(1.8, 1.8), expand_text=(1.4, 1.4),
+# )
+
+# ax.set_xlabel("UMAP 1", fontsize=14)
+# ax.set_ylabel("UMAP 2", fontsize=14)
+# ax.tick_params(axis="both", labelsize=14)
+# ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
+#              "(Nucleotide Transformer v2, 500M, multi-species)",
+#              fontsize=14)
+
+# handles = [Line2D([0], [0], marker="o", color="w",
+#                   markerfacecolor=color_map[g], markeredgecolor="black",
+#                   markersize=12, label=g) for g in groups]
+# ax.legend(handles=handles, loc="lower left", fontsize=14,
+#           frameon=False, title="Clade", title_fontsize=14)
+
+# plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
+# plt.savefig("FigA_telomere_umap.png", dpi=600, bbox_inches="tight")
 
     
 # #plotting -- version 1

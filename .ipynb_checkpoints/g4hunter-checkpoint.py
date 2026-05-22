@@ -135,11 +135,9 @@ tracks = {
 x = np.arange(len(tracks["WT"])) + WIN // 2
 
 
-# plotting -- version 2
-fig = plt.figure(figsize=(15, 20))
-gs = fig.add_gridspec(3, 1, height_ratios=[1.9, 1, 0.85], hspace=0.25)
-
-ax1 = fig.add_subplot(gs[0])
+# plotting --version3
+fig1 = plt.figure(figsize=(15, 11))
+ax1 = fig1.add_subplot(1, 1, 1)
 clade_colors = {c: plt.get_cmap("tab20")(i)
                 for i, c in enumerate(sorted(tel_df["clade"].unique()))}
 y_pos = np.arange(len(tel_df))
@@ -153,14 +151,21 @@ ax1.axvline(1.0, color="red", lw=0.8, ls="--", alpha=0.7)
 ax1.axvline(-1.0, color="red", lw=0.8, ls="--", alpha=0.7)
 ax1.set_xlabel("G4Hunter mean score (G-rich strand)", fontsize=16)
 ax1.tick_params(axis="x", labelsize=13)
-ax1.set_title("(i) Predicted G4-forming propensity of tiled telomeric repeats",
+ax1.set_title("Predicted G4-forming propensity of tiled telomeric repeats",
               loc="left", fontsize=17)
 handles = [plt.Rectangle((0, 0), 1, 1, color=col) for col in clade_colors.values()]
 ax1.legend(handles, clade_colors.keys(), loc="lower right",
            fontsize=12, frameon=True, edgecolor="black", framealpha=0.95,
            ncol=2, title="Clade", title_fontsize=13)
 
-ax2 = fig.add_subplot(gs[1])
+fig1.savefig("FigB1_g4hunter_telomeric.pdf", bbox_inches="tight")
+fig1.savefig("FigB1_g4hunter_telomeric.png", dpi=600, bbox_inches="tight")
+
+
+fig2 = plt.figure(figsize=(15, 11))
+gs = fig2.add_gridspec(2, 1, height_ratios=[1, 0.85], hspace=0.3)
+
+ax2 = fig2.add_subplot(gs[0])
 colors = {"WT": "black", "C228T": "#B85042",
           "C250T": "#2C5F2D", "C228T + C250T": "#065A82"}
 
@@ -177,12 +182,12 @@ ax2.set_xlabel(f"Position in hTERT promoter window "
                fontsize=16)
 ax2.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
 ax2.tick_params(axis="both", labelsize=13)
-ax2.set_title("(ii) G4-forming potential across the hTERT proximal promoter "
+ax2.set_title("(a) G4-forming potential across the hTERT proximal promoter "
               "with C228T / C250T overlays", loc="left", fontsize=17)
 ax2.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
 
-ax3 = fig.add_subplot(gs[2])
+ax3 = fig2.add_subplot(gs[1])
 lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
 hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
 mask = (x >= lo) & (x <= hi)
@@ -196,14 +201,84 @@ ax3.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
 ax3.set_xlabel("Position (bp, plus strand)", fontsize=16)
 ax3.set_ylabel("G4Hunter", fontsize=16)
 ax3.tick_params(axis="both", labelsize=13)
-ax3.set_title("(iii) Zoom on the C228T / C250T hotspot region",
+ax3.set_title("(b) Zoom on the C228T / C250T hotspot region",
               loc="left", fontsize=17)
 ax3.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
 
-plt.savefig("FigB_g4hunter.pdf", bbox_inches="tight")
-plt.savefig("FigB_g4hunter.png", dpi=600, bbox_inches="tight")
+fig2.savefig("FigB2_g4hunter_htert.pdf", bbox_inches="tight")
+fig2.savefig("FigB2_g4hunter_htert.png", dpi=600, bbox_inches="tight")
 print(tel_df.to_string(index=False))
+
+# # plotting -- version 2
+# fig = plt.figure(figsize=(15, 20))
+# gs = fig.add_gridspec(3, 1, height_ratios=[1.9, 1, 0.85], hspace=0.25)
+
+# ax1 = fig.add_subplot(gs[0])
+# clade_colors = {c: plt.get_cmap("tab20")(i)
+#                 for i, c in enumerate(sorted(tel_df["clade"].unique()))}
+# y_pos = np.arange(len(tel_df))
+# ax1.barh(y_pos, tel_df["g4h_mean"],
+#          color=[clade_colors[c] for c in tel_df["clade"]],
+#          edgecolor="black", linewidth=0.6)
+# ax1.set_yticks(y_pos)
+# ax1.set_yticklabels([f"{r.species}  ({r.motif})" for r in tel_df.itertuples()],
+#                     fontsize=9, style="italic")
+# ax1.axvline(1.0, color="red", lw=0.8, ls="--", alpha=0.7)
+# ax1.axvline(-1.0, color="red", lw=0.8, ls="--", alpha=0.7)
+# ax1.set_xlabel("G4Hunter mean score (G-rich strand)", fontsize=16)
+# ax1.tick_params(axis="x", labelsize=13)
+# ax1.set_title("(i) Predicted G4-forming propensity of tiled telomeric repeats",
+#               loc="left", fontsize=17)
+# handles = [plt.Rectangle((0, 0), 1, 1, color=col) for col in clade_colors.values()]
+# ax1.legend(handles, clade_colors.keys(), loc="lower right",
+#            fontsize=12, frameon=True, edgecolor="black", framealpha=0.95,
+#            ncol=2, title="Clade", title_fontsize=13)
+
+# ax2 = fig.add_subplot(gs[1])
+# colors = {"WT": "black", "C228T": "#B85042",
+#           "C250T": "#2C5F2D", "C228T + C250T": "#065A82"}
+
+# for label, track in tracks.items():
+#     ax2.plot(x, track, label=label, color=colors[label],
+#              lw=2.2 if label == "WT" else 1.5,
+#              alpha=1.0 if label == "WT" else 0.85)
+# ax2.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax2.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax2.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
+# ax2.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
+# ax2.set_xlabel(f"Position in hTERT promoter window "
+#                f"(chr5:{htert['start']}-{htert['end']}, hg38, plus strand)",
+#                fontsize=16)
+# ax2.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
+# ax2.tick_params(axis="both", labelsize=13)
+# ax2.set_title("(ii) G4-forming potential across the hTERT proximal promoter "
+#               "with C228T / C250T overlays", loc="left", fontsize=17)
+# ax2.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
+#            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+
+# ax3 = fig.add_subplot(gs[2])
+# lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
+# hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
+# mask = (x >= lo) & (x <= hi)
+# for label, track in tracks.items():
+#     ax3.plot(x[mask], track[mask], label=label, color=colors[label],
+#              lw=2.2 if label == "WT" else 1.5, marker="o", markersize=4,
+#              alpha=1.0 if label == "WT" else 0.85)
+# ax3.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
+# ax3.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
+# ax3.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+# ax3.set_xlabel("Position (bp, plus strand)", fontsize=16)
+# ax3.set_ylabel("G4Hunter", fontsize=16)
+# ax3.tick_params(axis="both", labelsize=13)
+# ax3.set_title("(iii) Zoom on the C228T / C250T hotspot region",
+#               loc="left", fontsize=17)
+# ax3.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
+#            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+
+# plt.savefig("FigB_g4hunter.pdf", bbox_inches="tight")
+# plt.savefig("FigB_g4hunter.png", dpi=600, bbox_inches="tight")
+# print(tel_df.to_string(index=False))
 
 
 # # ---------- Plotting -- version 1 ----------
