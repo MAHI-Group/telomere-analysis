@@ -162,52 +162,105 @@ fig1.savefig("FigB1_g4hunter_telomeric.pdf", bbox_inches="tight")
 fig1.savefig("FigB1_g4hunter_telomeric.png", dpi=600, bbox_inches="tight")
 
 
-fig2 = plt.figure(figsize=(15, 11))
-gs = fig2.add_gridspec(2, 1, height_ratios=[1, 0.85], hspace=0.3)
-
-ax2 = fig2.add_subplot(gs[0])
+plot_order = ["C228T", "C250T", "C228T + C250T", "WT"]
 colors = {"WT": "black", "C228T": "#B85042",
           "C250T": "#2C5F2D", "C228T + C250T": "#065A82"}
+xlabel_full = (f"Position in hTERT promoter window "
+               f"(chr5:{htert['start']}-{htert['end']}, hg38;\n"
+               f"plus strand = G-rich non-template strand of hTERT)")
 
-for label, track in tracks.items():
-    ax2.plot(x, track, label=label, color=colors[label],
-             lw=2.2 if label == "WT" else 1.5,
-             alpha=1.0 if label == "WT" else 0.85)
-ax2.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
-ax2.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
-ax2.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
-ax2.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
-ax2.set_xlabel(f"Position in hTERT promoter window "
-               f"(chr5:{htert['start']}-{htert['end']}, hg38, plus strand)",
-               fontsize=16)
-ax2.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
-ax2.tick_params(axis="both", labelsize=13)
-ax2.set_title("(a) G4-forming potential across the hTERT proximal promoter "
-              "with C228T / C250T overlays", loc="left", fontsize=17)
-ax2.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
-           framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+def style(label):
+    return {"lw": 3.0 if label == "WT" else 1.5,
+            "alpha": 1.0 if label == "WT" else 0.85,
+            "zorder": 5 if label == "WT" else 3}
 
-ax3 = fig2.add_subplot(gs[1])
+def mark_mutation_sites(ax, ymin_frac=0.92):
+    ax.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
+    ax.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
+    ymin, ymax = ax.get_ylim()
+    y = ymin + ymin_frac * (ymax - ymin)
+    ax.text(POS_G_C228T_PLUS, y, " C228T", color="#d95f02",
+            fontsize=12, va="top", ha="left", fontweight="bold")
+    ax.text(POS_G_C250T_PLUS, y, " C250T", color="#1b9e77",
+            fontsize=12, va="top", ha="left", fontweight="bold")
+
+
+fig_combined = plt.figure(figsize=(15, 11))
+gs = fig_combined.add_gridspec(2, 1, height_ratios=[1, 0.85], hspace=0.3)
+
+ax_full = fig_combined.add_subplot(gs[0])
+for label in plot_order:
+    ax_full.plot(x, tracks[label], label=label, color=colors[label], **style(label))
+ax_full.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+ax_full.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+mark_mutation_sites(ax_full)
+ax_full.set_xlabel(xlabel_full, fontsize=16)
+ax_full.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
+ax_full.tick_params(axis="both", labelsize=13)
+ax_full.set_title("(a) G4-forming potential across the hTERT proximal promoter "
+                  "with C228T / C250T overlays", loc="left", fontsize=17)
+ax_full.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
+               framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+
+ax_zoom = fig_combined.add_subplot(gs[1])
 lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
 hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
 mask = (x >= lo) & (x <= hi)
-for label, track in tracks.items():
-    ax3.plot(x[mask], track[mask], label=label, color=colors[label],
-             lw=2.2 if label == "WT" else 1.5, marker="o", markersize=4,
-             alpha=1.0 if label == "WT" else 0.85)
-ax3.axvline(POS_G_C228T_PLUS, color="#d95f02", lw=0.7, ls=":", alpha=0.8)
-ax3.axvline(POS_G_C250T_PLUS, color="#1b9e77", lw=0.7, ls=":", alpha=0.8)
-ax3.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
-ax3.set_xlabel("Position (bp, plus strand)", fontsize=16)
-ax3.set_ylabel("G4Hunter", fontsize=16)
-ax3.tick_params(axis="both", labelsize=13)
-ax3.set_title("(b) Zoom on the C228T / C250T hotspot region",
-              loc="left", fontsize=17)
-ax3.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
-           framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+for label in plot_order:
+    ax_zoom.plot(x[mask], tracks[label][mask], label=label, color=colors[label],
+                 marker="o", markersize=4, **style(label))
+ax_zoom.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+mark_mutation_sites(ax_zoom)
+ax_zoom.set_xlabel("Position (bp, plus strand)", fontsize=16)
+ax_zoom.set_ylabel("G4Hunter", fontsize=16)
+ax_zoom.tick_params(axis="both", labelsize=13)
+ax_zoom.set_title("(b) Zoom on the C228T / C250T hotspot region",
+                  loc="left", fontsize=17)
+ax_zoom.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
+               framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
 
-fig2.savefig("FigB2_g4hunter_htert.pdf", bbox_inches="tight")
-fig2.savefig("FigB2_g4hunter_htert.png", dpi=600, bbox_inches="tight")
+fig_combined.savefig("FigB2_g4hunter_htert.pdf", bbox_inches="tight")
+fig_combined.savefig("FigB2_g4hunter_htert.png", dpi=600, bbox_inches="tight")
+
+
+fig_C = plt.figure(figsize=(15, 6))
+ax_C = fig_C.add_subplot(1, 1, 1)
+for label in plot_order:
+    ax_C.plot(x, tracks[label], label=label, color=colors[label], **style(label))
+ax_C.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+ax_C.axhline(-1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+mark_mutation_sites(ax_C)
+ax_C.set_xlabel(xlabel_full, fontsize=16)
+ax_C.set_ylabel("G4Hunter score (25 bp window)", fontsize=16)
+ax_C.tick_params(axis="both", labelsize=13)
+ax_C.set_title("G4-forming potential across the hTERT proximal promoter "
+               "with C228T / C250T overlays", loc="left", fontsize=17)
+ax_C.legend(loc="upper right", fontsize=13, frameon=True, edgecolor="black",
+            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+fig_C.savefig("FigC_g4hunter_htert.pdf", bbox_inches="tight")
+fig_C.savefig("FigC_g4hunter_htert.png", dpi=600, bbox_inches="tight")
+
+
+fig_D = plt.figure(figsize=(15, 5))
+ax_D = fig_D.add_subplot(1, 1, 1)
+lo = min(POS_G_C228T_PLUS, POS_G_C250T_PLUS) - 35
+hi = max(POS_G_C228T_PLUS, POS_G_C250T_PLUS) + 35
+mask = (x >= lo) & (x <= hi)
+for label in plot_order:
+    ax_D.plot(x[mask], tracks[label][mask], label=label, color=colors[label],
+              marker="o", markersize=4, **style(label))
+ax_D.axhline(1.0, color="red", lw=0.6, ls="--", alpha=0.6)
+mark_mutation_sites(ax_D)
+ax_D.set_xlabel("Position (bp, plus strand)", fontsize=16)
+ax_D.set_ylabel("G4Hunter", fontsize=16)
+ax_D.tick_params(axis="both", labelsize=13)
+ax_D.set_title("Zoom on the C228T / C250T hotspot region",
+               loc="left", fontsize=17)
+ax_D.legend(loc="upper left", fontsize=13, frameon=True, edgecolor="black",
+            framealpha=0.95, ncol=4, title="Variant", title_fontsize=14)
+fig_D.savefig("FigD_g4hunter_htert_zoom.pdf", bbox_inches="tight")
+fig_D.savefig("FigD_g4hunter_htert_zoom.png", dpi=600, bbox_inches="tight")
+
 print(tel_df.to_string(index=False))
 
 # # plotting -- version 2
