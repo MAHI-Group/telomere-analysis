@@ -1,0 +1,20 @@
+motif,n_species,species,clades,g4h_mean,above_threshold
+TTGGGG,1,Tetrahymena thermophila,Ciliate,2.667,True
+TTTTGGGG,3,Oxytricha nova; Euplotes aediculatus; Stylonychia mytilus,Ciliate,2.000,True
+TAGGG,1,Giardia lamblia,Other protist,1.800,True
+CTGGGTGCTGTGGGGT,1,Candida glabrata,Fungi (Ascomycota),1.555,True
+TTGGGT,1,Paramecium tetraurelia,Ciliate,1.500,True
+TTAGGG,25,Trypanosoma brucei; Trypanosoma cruzi; Leishmania major; Neurospora crassa; Aspergillus nidulans; Aspergillus fumigatus; Magnaporthe oryzae; Fusarium oxysporum; Trichoderma reesei; Ustilago maydis; Cryptococcus neoformans; Coprinus cinereus; Strongylocentrotus purpuratus; Crassostrea gigas; Hydra vulgaris; Nematostella vectensis; Homo sapiens; Mus musculus; Bos taurus; Ornithorhynchus anatinus; Gallus gallus; Anolis carolinensis; Xenopus laevis; Danio rerio; Petromyzon marinus,Cnidarian; Echinoderm; Fungi (Ascomycota); Fungi (Basidiomycota); Kinetoplastid; Mollusc; Vertebrate,1.500,True
+TTTAGGG,1,Plasmodium falciparum,Other protist,1.277,True
+TTGGGTGCTGTGTGGGT,1,Pichia pastoris,Fungi (Ascomycota),1.182,True
+TGTGGGTGTGGTGTG,1,Saccharomyces cerevisiae,Fungi (Ascomycota),1.133,True
+TTTTAGGG,1,Chlamydomonas reinhardtii,Green alga,1.125,True
+TCTGGGTG,1,Saccharomyces castellii,Fungi (Ascomycota),1.125,True
+TTACAGGG,1,Schizosaccharomyces pombe,Fungi (Ascomycota),1.000,False
+TTAGTCAGGG,1,Yarrowia lipolytica,Fungi (Ascomycota),0.900,False
+TTAGG,4,Bombyx mori; Apis mellifera; Locusta migratoria; Daphnia pulex,Crustacean; Insect,0.800,False
+TCAGG,1,Tribolium castaneum,Insect,0.600,False
+ACGGATTTGATTAGGTATGTGGTGT,1,Kluyveromyces lactis,Fungi (Ascomycota),0.560,False
+TTAGGC,2,Caenorhabditis elegans; Caenorhabditis briggsae,Nematode,0.500,False
+ACGGATGTCACGATCATTGGTGT,1,Candida tropicalis,Fungi (Ascomycota),0.302,False
+ACGGATGTCTAACTTCTTGGTGT,1,Candida albicans,Fungi (Ascomycota),0.258,False

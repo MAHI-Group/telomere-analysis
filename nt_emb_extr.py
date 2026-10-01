@@ -1,359 +1,157 @@
-import numpy as np
-import pandas as pd
-import torch
-import matplotlib.pyplot as plt
-from transformers import AutoTokenizer, AutoModelForMaskedLM
-from umap import UMAP
-from matplotlib.lines import Line2D
-from adjustText import adjust_text
+import argparse
 import os
 
-SPECIES = [
-    # Ciliates
-    ("Tetrahymena thermophila", "TTGGGG", "Ciliate"),
-    ("Oxytricha nova", "TTTTGGGG", "Ciliate"),
-    ("Paramecium tetraurelia", "TTGGGT", "Ciliate"),
-    ("Euplotes aediculatus", "TTTTGGGG", "Ciliate"),
-    ("Stylonychia mytilus", "TTTTGGGG", "Ciliate"),
-    # Kinetoplastids / other protists
-    ("Trypanosoma brucei", "TTAGGG", "Kinetoplastid"),
-    ("Trypanosoma cruzi", "TTAGGG", "Kinetoplastid"),
-    ("Leishmania major", "TTAGGG", "Kinetoplastid"),
-    ("Giardia lamblia", "TAGGG", "Other protist"),
-    ("Plasmodium falciparum", "TTTAGGG", "Other protist"),
-    # Fungi - Ascomycota
-    ("Saccharomyces cerevisiae", "TGTGGGTGTGGTGTG", "Fungi (Ascomycota)"),
-    ("Saccharomyces castellii", "TCTGGGTG", "Fungi (Ascomycota)"),
-    ("Schizosaccharomyces pombe", "TTACAGGG", "Fungi (Ascomycota)"),
-    ("Candida albicans", "GGTGTACGGATGTCACGATCATT", "Fungi (Ascomycota)"),
-    ("Candida glabrata", "GGGGTCTGGGTGCTG", "Fungi (Ascomycota)"),
-    ("Candida tropicalis", "TTACGGATGTCTAACTCTTT", "Fungi (Ascomycota)"),
-    ("Kluyveromyces lactis", "TTGATTAGGTATGTGGTGT", "Fungi (Ascomycota)"),
-    ("Yarrowia lipolytica", "GGGTTAGTCA", "Fungi (Ascomycota)"),
-    ("Pichia pastoris", "TTGGGTGCTGTGTGGGT", "Fungi (Ascomycota)"),
-    ("Neurospora crassa", "TTAGGG", "Fungi (Ascomycota)"),
-    ("Aspergillus nidulans", "TTAGGG", "Fungi (Ascomycota)"),
-    ("Aspergillus fumigatus", "TTAGGG", "Fungi (Ascomycota)"),
-    ("Magnaporthe oryzae", "TTAGGG", "Fungi (Ascomycota)"),
-    ("Fusarium oxysporum", "TTAGGG", "Fungi (Ascomycota)"),
-    ("Trichoderma reesei", "TTAGGG", "Fungi (Ascomycota)"),
-    # Fungi - Basidiomycota
-    ("Ustilago maydis", "TTAGGG", "Fungi (Basidiomycota)"),
-    ("Cryptococcus neoformans", "TTAGGG", "Fungi (Basidiomycota)"),
-    ("Coprinus cinereus", "TTAGGG", "Fungi (Basidiomycota)"),
-    # Green alga
-    ("Chlamydomonas reinhardtii", "TTTTAGGG", "Green alga"),
-    # Nematodes
-    ("Caenorhabditis elegans", "TTAGGC", "Nematode"),
-    ("Caenorhabditis briggsae", "TTAGGC", "Nematode"),
-    # Insects
-    ("Bombyx mori", "TTAGG", "Insect"),
-    ("Apis mellifera", "TTAGG", "Insect"),
-    ("Tribolium castaneum", "TCAGG", "Insect"),
-    ("Locusta migratoria", "TTAGG", "Insect"),
-    ("Anopheles gambiae", "TTAGGC", "Insect"),
-    # Other invertebrates
-    ("Strongylocentrotus purpuratus", "TTAGGG", "Echinoderm"),
-    ("Crassostrea gigas", "TTAGGG", "Mollusc"),
-    ("Daphnia pulex", "TTAGGG", "Crustacean"),
-    ("Hydra vulgaris", "TTAGGG", "Cnidarian"),
-    ("Nematostella vectensis", "TTAGGG", "Cnidarian"),
-    # Vertebrates
-    ("Homo sapiens", "TTAGGG", "Vertebrate"),
-    ("Mus musculus", "TTAGGG", "Vertebrate"),
-    ("Bos taurus", "TTAGGG", "Vertebrate"),
-    ("Ornithorhynchus anatinus", "TTAGGG", "Vertebrate"),
-    ("Gallus gallus", "TTAGGG", "Vertebrate"),
-    ("Anolis carolinensis", "TTAGGG", "Vertebrate"),
-    ("Xenopus laevis", "TTAGGG", "Vertebrate"),
-    ("Danio rerio", "TTAGGG", "Vertebrate"),
-    ("Petromyzon marinus", "TTAGGG", "Vertebrate"),
-]
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.spatial.distance import pdist, squareform
 
-if not os.path.isfile("telomere_umap.csv"):
-    print("The UMAP embedding file does not exist. Extracting embeddings from NT v2...")
+from panel import clade_colours, load_panel, motif_clade, motif_labels, tile, unique_motifs
 
-    TARGET_LEN = 1200
-    MODEL = "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species"
-    
-    def tile(motif, length=TARGET_LEN):
-        return (motif * (length // len(motif) + 1))[:length]
-    
-    df = pd.DataFrame(SPECIES, columns=["species", "motif", "group"])
-    df["sequence"] = df["motif"].apply(tile)
-    
+MODEL = "InstaDeepAI/nucleotide-transformer-v2-500m-multi-species"
+TARGET_LEN = 1200
+SEED = 42
+EMB_FILE = "results/motif_embeddings.npz"
+
+
+def embed_motifs(motifs, batch_size=4):
+    import torch
+    from transformers import AutoModelForMaskedLM, AutoTokenizer
+
+    torch.manual_seed(SEED)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    
     tokenizer = AutoTokenizer.from_pretrained(MODEL, trust_remote_code=True)
-    model = AutoModelForMaskedLM.from_pretrained(
-        MODEL, trust_remote_code=True
-    ).to(device).eval()
-    
-    @torch.inference_mode()
-    def embed(seqs, batch_size=4):
-        out = []
+    model = AutoModelForMaskedLM.from_pretrained(MODEL, trust_remote_code=True).to(device).eval()
+
+    seqs = [tile(m, TARGET_LEN) for m in motifs]
+    out = []
+    with torch.inference_mode():
         for i in range(0, len(seqs), batch_size):
             tok = tokenizer.batch_encode_plus(
-                seqs[i:i+batch_size], return_tensors="pt",
-                padding="longest", truncation=True, max_length=2048
+                seqs[i:i + batch_size], return_tensors="pt",
+                padding="longest", truncation=True, max_length=2048,
             )
             input_ids = tok["input_ids"].to(device)
             attn = (input_ids != tokenizer.pad_token_id).to(device)
-            with torch.autocast(device_type="cuda", dtype=torch.float16):
+            with torch.autocast(device_type=device, dtype=torch.float16, enabled=device == "cuda"):
                 outs = model(input_ids, attention_mask=attn,
                              encoder_attention_mask=attn, output_hidden_states=True)
             h = outs.hidden_states[-1]
             mask = attn.unsqueeze(-1).float()
-            pooled = (h.float() * mask).sum(1) / mask.sum(1)
-            out.append(pooled.cpu().numpy())
-        return np.concatenate(out)
-    
-    embs = embed(df["sequence"].tolist())
-    np.save("telomere_embeddings.npy", embs)
-
-    # UMAP
-    reducer = UMAP(n_neighbors=15, min_dist=0.6, metric="cosine",
-                   spread=1.5, random_state=42)
-    xy = reducer.fit_transform(embs)
-    df["umap_1"], df["umap_2"] = xy[:, 0], xy[:, 1]
-    df.to_csv("telomere_umap.csv", index=False)
-else:    
-     print("UMAP embedding file exists. Loading it into a variable.")
-     df = pd.read_csv("telomere_umap.csv")
-     #df = df[df["group"] != "Plant"].reset_index(drop=True)
+            out.append(((h.float() * mask).sum(1) / mask.sum(1)).cpu().numpy())
+    return np.concatenate(out)
 
 
-# plotting -version3
-
-from matplotlib.patches import Ellipse
-import textwrap
-
-clusters = {
-    "C1": ["TTAGGG"],
-    "C2": ["TTAGGC", "TTGGGG"],
-    "C3": ["TGTGGGTGTGGTGTG", "TCTGGGTG", "GGTGTACGGATGTCACGATCATT",
-           "GGGGTCTGGGTGCTG", "TTACGGATGTCTAACTCTTT",
-           "TTGATTAGGTATGTGGTGT", "GGGTTAGTCA", "TTGGGTGCTGTGTGGGT",
-           "TTTTGGGG", "TTGGGT",
-           "TTACAGGG", "TTTTAGGG", "TTTAGGG"],
-    "C4": ["TTAGG", "TCAGG", "TAGGG"],
-}
-
-cluster_sublabels = {
-    "C1": "TTAGGG",
-    "C2": "TTAGGC",
-    "C3": "Heterogeneous (see Suppl.)",
-    "C4": "TTAGG / TCAGG",
-}
-
-agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
-         .agg(species=("species", list),
-              groups=("group", lambda g: sorted(set(g))),
-              n=("species", "count")))
-agg["color_group"] = agg.apply(
-    lambda r: r["groups"][0] if len(r["groups"]) == 1 else "Cross-clade",
-    axis=1,
-)
-agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
-groups = sorted(agg["color_group"].unique())
-cmap = plt.get_cmap("tab20")
-color_map = {g: cmap(i) for i, g in enumerate(groups)}
-
-fig, ax = plt.subplots(figsize=(14, 10))
-
-for _, r in agg.iterrows():
-    ax.scatter(r["umap_1"], r["umap_2"], s=200,
-               color=color_map[r["color_group"]],
-               edgecolor="black", linewidth=0.8, alpha=0.9, zorder=3)
-
-def draw_cluster(ax, coords, label, sublabel=None, color="dimgray", pad=0.4):
-    coords = np.asarray(coords, dtype=float)
-    mean = coords.mean(axis=0)
-    if len(coords) == 1:
-        width = height = 2 * pad
-        angle = 0.0
-    elif len(coords) == 2:
-        diff = coords[1] - coords[0]
-        angle = np.degrees(np.arctan2(diff[1], diff[0]))
-        width = np.linalg.norm(diff) + 2 * pad
-        height = 2 * pad
-    else:
-        cov = np.cov(coords.T)
-        eigvals, eigvecs = np.linalg.eigh(cov)
-        order = eigvals.argsort()[::-1]
-        eigvals, eigvecs = eigvals[order], eigvecs[:, order]
-        angle = np.degrees(np.arctan2(eigvecs[1, 0], eigvecs[0, 0]))
-        proj = (coords - mean) @ eigvecs
-        a0 = np.abs(proj[:, 0]).max()
-        b0 = np.abs(proj[:, 1]).max()
-        scale = np.sqrt(((proj[:, 0] / a0) ** 2 +
-                         (proj[:, 1] / b0) ** 2).max())
-        a = a0 * scale + pad
-        b = b0 * scale + pad
-        width, height = 2 * a, 2 * b
-        
-    ell = Ellipse(mean, width=width, height=height, angle=angle,
-                  facecolor="none", edgecolor=color, lw=1.8, ls="--", zorder=2)
-    ax.add_patch(ell)
-    theta = np.radians(angle)
-    y_top = np.sqrt((width / 2 * np.sin(theta)) ** 2 +
-                    (height / 2 * np.cos(theta)) ** 2)
-    display = f"{label}: {sublabel}" if sublabel else label
-    ax.text(mean[0], mean[1] + y_top + 0.15, display,
-            fontsize=16, weight="bold", ha="center", va="bottom",
-            color=color, zorder=4)
-
-for cname, motif_list in clusters.items():
-    rows = agg[agg["motif"].isin(motif_list)]
-    if len(rows) == 0:
-        continue
-    draw_cluster(ax, rows[["umap_1", "umap_2"]].values,
-                 cname, sublabel=cluster_sublabels.get(cname))
-
-ax.set_xlabel("UMAP 1", fontsize=18)
-ax.set_ylabel("UMAP 2", fontsize=18)
-ax.tick_params(axis="both", labelsize=14)
-ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
-             "(Nucleotide Transformer v2, 500M, multi-species)",
-             fontsize=18)
-
-handles = [Line2D([0], [0], marker="o", color="w",
-                  markerfacecolor=color_map[g], markeredgecolor="black",
-                  markersize=10, label=g) for g in groups]
-
-ax.legend(handles=handles, loc="lower left", fontsize=16,
-          frameon=False, title="Clade", title_fontsize=16)
-
-plt.savefig("FigA_telomere_umap_v2.pdf", bbox_inches="tight")
-plt.savefig("FigA_telomere_umap_v2.png", dpi=600, bbox_inches="tight")
+def load_or_embed(motifs, recompute):
+    if os.path.isfile(EMB_FILE) and not recompute:
+        cached = np.load(EMB_FILE, allow_pickle=False)
+        if list(cached["motifs"]) == motifs:
+            print(f"Loaded cached embeddings from {EMB_FILE}")
+            return cached["embeddings"]
+        print("Cached motifs differ from species.tsv; recomputing")
+    emb = embed_motifs(motifs)
+    np.savez(EMB_FILE, motifs=np.array(motifs), embeddings=emb,
+             model=MODEL, tile_length=TARGET_LEN)
+    print(f"Saved {emb.shape} embeddings to {EMB_FILE}")
+    return emb
 
 
+def tick_label(motif, label):
+    if label.endswith("species"):
+        return f"{motif}  ({label})"
+    return f"{motif}  ($\\it{{{label.replace(' ', '~')}}}$)"
 
-# # Plotting --verion 2
-# agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
-#          .agg(species=("species", list),
-#               groups=("group", lambda g: sorted(set(g))),
-#               n=("species", "count")))
-# agg["color_group"] = agg.apply(
-#     lambda r: r["groups"][0] if len(r["groups"]) == 1 else "Cross-clade",
-#     axis=1,
-# )
-# agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
-# groups = sorted(agg["color_group"].unique())
-# cmap = plt.get_cmap("tab20")
-# color_map = {g: cmap(i) for i, g in enumerate(groups)}
 
-# fig, ax = plt.subplots(figsize=(11, 9))
+def plot_similarity(motifs, emb, labels, clades, stem):
+    dist = pdist(emb, metric="cosine")
+    sim = 1.0 - squareform(dist)
+    pd.DataFrame(sim, index=motifs, columns=motifs).to_csv("results/motif_cosine_similarity.csv")
 
-# texts = []
-# for _, r in agg.iterrows():
-#     ax.scatter(r["umap_1"], r["umap_2"], s=180,
-#                color=color_map[r["color_group"]],
-#                edgecolor="black", linewidth=0.8, alpha=0.9, zorder=3)
-#     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
-#     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
-#                          fontsize=15, family="monospace"))
+    Z = linkage(dist, method="average", optimal_ordering=True)
+    n = len(motifs)
+    fig = plt.figure(figsize=(14, 11))
+    gs = fig.add_gridspec(2, 2, width_ratios=[1.2, 4], height_ratios=[0.035, 1],
+                          wspace=0.02, hspace=0.04)
+    ax_c = fig.add_subplot(gs[0, 1])
+    ax_d = fig.add_subplot(gs[1, 0])
+    ax_h = fig.add_subplot(gs[1, 1])
 
-# adjust_text(
-#     texts, ax=ax,
-#     arrowprops=dict(arrowstyle="-", color="grey", lw=0.6,
-#                     shrinkA=20, shrinkB=6, connectionstyle="arc3"),
-#     expand_points=(1.8, 1.8), expand_text=(1.4, 1.4),
-# )
+    dn = dendrogram(Z, orientation="left", ax=ax_d, no_labels=True,
+                    color_threshold=0, above_threshold_color="black")
+    order = dn["leaves"]
+    ax_d.set_ylim(10 * n, 0)
+    ax_d.axis("off")
 
-# ax.set_xlabel("UMAP 1", fontsize=14)
-# ax.set_ylabel("UMAP 2", fontsize=14)
-# ax.tick_params(axis="both", labelsize=14)
-# ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
-#              "(Nucleotide Transformer v2, 500M, multi-species)",
-#              fontsize=14)
+    off = sim[~np.eye(n, dtype=bool)]
+    im = ax_h.imshow(sim[np.ix_(order, order)], cmap="viridis", aspect="auto",
+                     vmin=off.min(), vmax=off.max())
+    ax_h.set_yticks(range(n))
+    ax_h.set_yticklabels([tick_label(motifs[i], labels[motifs[i]]) for i in order],
+                         fontsize=11, family="monospace")
+    ax_h.yaxis.tick_right()
+    ax_h.set_xticks(range(n))
+    ax_h.set_xticklabels([motifs[i] for i in order], rotation=90, fontsize=10, family="monospace")
+    cb = fig.colorbar(im, cax=ax_c, orientation="horizontal")
+    cb.set_label("Cosine similarity of mean-pooled embeddings (diagonal saturated)", fontsize=11)
+    ax_c.xaxis.set_ticks_position("top")
+    ax_c.xaxis.set_label_position("top")
+    fig.savefig(f"{stem}.pdf", bbox_inches="tight")
+    fig.savefig(f"{stem}.png", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+    return sim, order
 
-# handles = [Line2D([0], [0], marker="o", color="w",
-#                   markerfacecolor=color_map[g], markeredgecolor="black",
-#                   markersize=12, label=g) for g in groups]
-# ax.legend(handles=handles, loc="lower left", fontsize=14,
-#           frameon=False, title="Clade", title_fontsize=14)
 
-# plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
-# plt.savefig("FigA_telomere_umap.png", dpi=600, bbox_inches="tight")
+def plot_umap(motifs, emb, labels, clades, stem, n_neighbors, min_dist):
+    from umap import UMAP
 
-    
-# #plotting -- version 1
-# agg = (df.groupby(["motif", "umap_1", "umap_2"], as_index=False)
-#          .agg(species=("species", list),
-#               groups=("group", lambda g: sorted(set(g))),
-#               n=("species", "count")))
-# agg["color_group"] = agg.apply(
-#     lambda r: r["groups"][0] if len(r["groups"]) == 1 else "Cross-clade",
-#     axis=1,
-# )
-# agg = agg.sort_values("n", ascending=False).reset_index(drop=True)
+    xy = UMAP(n_neighbors=n_neighbors, min_dist=min_dist, metric="cosine",
+              random_state=SEED).fit_transform(emb)
+    pd.DataFrame({"motif": motifs, "umap_1": xy[:, 0], "umap_2": xy[:, 1]}).to_csv(
+        "results/motif_umap.csv", index=False)
 
-# groups = sorted(agg["color_group"].unique())
-# cmap = plt.get_cmap("tab20")
-# color_map = {g: cmap(i) for i, g in enumerate(groups)}
+    colour = clade_colours(set(clades.values()))
+    groups = list(colour)
+    fig, ax = plt.subplots(figsize=(11, 9))
+    for m, (x, y) in zip(motifs, xy):
+        ax.scatter(x, y, s=160, color=colour[clades[m]], edgecolor="black", lw=0.8, zorder=3)
+        ax.annotate(m, (x, y), xytext=(6, 4), textcoords="offset points",
+                    fontsize=10, family="monospace")
+    handles = [plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=colour[g],
+                          markeredgecolor="black", markersize=10, label=g) for g in groups]
+    ax.legend(handles=handles, loc="best", fontsize=11, frameon=False, title="Clade")
+    ax.set_xlabel("UMAP 1")
+    ax.set_ylabel("UMAP 2")
+    fig.savefig(f"{stem}.pdf", bbox_inches="tight")
+    fig.savefig(f"{stem}.png", dpi=600, bbox_inches="tight")
+    plt.close(fig)
 
-# fig = plt.figure(figsize=(17, 9))
-# gs = fig.add_gridspec(1, 2, width_ratios=[3, 2.2], wspace=0.05)
-# ax = fig.add_subplot(gs[0])
-# ax_legend = fig.add_subplot(gs[1])
-# ax_legend.axis("off")
 
-# texts = []
-# for _, r in agg.iterrows():
-#     ax.scatter(r["umap_1"], r["umap_2"], s=140,
-#                color=color_map[r["color_group"]],
-#                edgecolor="black", linewidth=0.6, alpha=0.9, zorder=3)
-#     label = r["motif"] if r["n"] == 1 else f"{r['motif']} (n={r['n']})"
-#     texts.append(ax.text(r["umap_1"], r["umap_2"], label,
-#                          fontsize=11, family="monospace"))
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--recompute", action="store_true", help="ignore cached embeddings")
+    parser.add_argument("--umap", action="store_true", help="also plot a UMAP of the distinct motifs")
+    parser.add_argument("--n-neighbors", type=int, default=5)
+    parser.add_argument("--min-dist", type=float, default=0.5)
+    args = parser.parse_args()
 
-# adjust_text(
-#     texts, ax=ax,
-#     arrowprops=dict(arrowstyle="-", color="grey", lw=0.5,
-#                     shrinkA=8, shrinkB=4, connectionstyle="arc3"),
-#     expand_points=(1.6, 1.6), expand_text=(1.25, 1.25),
-# )
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("figures", exist_ok=True)
 
-# ax.set_xlabel("UMAP 1")
-# ax.set_ylabel("UMAP 2")
-# ax.set_title("Telomeric tandem-repeat embeddings across eukaryotes\n"
-#              "(Nucleotide Transformer v2, 500M, multi-species)")
+    df = load_panel()
+    motifs = unique_motifs(df)
+    print(f"{len(df)} species, {len(motifs)} distinct motifs")
+    emb = load_or_embed(motifs, args.recompute)
 
-# handles = [Line2D([0], [0], marker="o", color="w",
-#                   markerfacecolor=color_map[g], markeredgecolor="black",
-#                   markersize=9, label=g) for g in groups]
-# ax.legend(handles=handles, loc="lower left", fontsize=8,
-#           frameon=False, title="Clade", title_fontsize=9)
+    labels = motif_labels(df)
+    clades = motif_clade(df)
+    plot_similarity(motifs, emb, labels, clades, "figures/FigS1_nt_motif_similarity")
+    if args.umap:
+        n_neighbors = min(args.n_neighbors, len(motifs) - 1)
+        plot_umap(motifs, emb, labels, clades, "figures/FigS1b_nt_motif_umap",
+                  n_neighbors, args.min_dist)
+        print(f"UMAP: n_neighbors={n_neighbors}, min_dist={args.min_dist}, cosine, seed={SEED}")
 
-# def wrap(species_list, width=42):
-#     lines, current = [], ""
-#     for s in species_list:
-#         candidate = s if not current else current + ", " + s
-#         if len(candidate) > width and current:
-#             lines.append(current)
-#             current = s
-#         else:
-#             current = candidate
-#     if current:
-#         lines.append(current)
-#     return lines
 
-# ax_legend.text(0.0, 1.0, r"Motif $\rightarrow$ species", fontsize=12, weight="bold",
-#                transform=ax_legend.transAxes)
-
-# y = 0.96
-# line_height = 0.030
-# for _, r in agg.iterrows():
-#     ax_legend.text(0.0, y, r["motif"], fontsize=10, family="monospace",
-#                    weight="bold", color=color_map[r["color_group"]],
-#                    transform=ax_legend.transAxes, va="top")
-#     species_lines = wrap(r["species"], width=42)
-#     for j, line in enumerate(species_lines):
-#         ax_legend.text(0.40, y - j * line_height, line, fontsize=8,
-#                        style="italic", transform=ax_legend.transAxes,
-#                        va="top")
-#     y -= line_height * (len(species_lines) + 0.4)
-
-# plt.savefig("FigA_telomere_umap.pdf", bbox_inches="tight")
-# plt.savefig("FigA_telomere_umap.png", dpi=300, bbox_inches="tight")
+if __name__ == "__main__":
+    main()

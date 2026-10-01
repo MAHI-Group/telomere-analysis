@@ -1,0 +1,50 @@
+species	motif	clade	source	status
+Tetrahymena thermophila	TTGGGG	Ciliate	Blackburn and Gall 1978	unchanged
+Oxytricha nova	TTTTGGGG	Ciliate	Klobutcher et al. 1981	unchanged
+Paramecium tetraurelia	TTGGGT	Ciliate	TeloBase	confirm
+Euplotes aediculatus	TTTTGGGG	Ciliate	Klobutcher et al. 1981	unchanged
+Stylonychia mytilus	TTTTGGGG	Ciliate	TeloBase	confirm
+Trypanosoma brucei	TTAGGG	Kinetoplastid	Blackburn and Challoner 1984	unchanged
+Trypanosoma cruzi	TTAGGG	Kinetoplastid	TeloBase	confirm
+Leishmania major	TTAGGG	Kinetoplastid	TeloBase	confirm
+Giardia lamblia	TAGGG	Other protist	TeloBase	confirm
+Plasmodium falciparum	TTTAGGG	Other protist	TeloBase	unchanged
+Saccharomyces cerevisiae	TGTGGGTGTGGTGTG	Fungi (Ascomycota)	Shampay et al. 1984	unchanged
+Saccharomyces castellii	TCTGGGTG	Fungi (Ascomycota)	TeloBase	confirm
+Schizosaccharomyces pombe	TTACAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Candida albicans	ACGGATGTCTAACTTCTTGGTGT	Fungi (Ascomycota)	McEachern and Hicks 1993	corrected
+Candida glabrata	CTGGGTGCTGTGGGGT	Fungi (Ascomycota)	TeloBase	corrected
+Candida tropicalis	ACGGATGTCACGATCATTGGTGT	Fungi (Ascomycota)	TeloBase	corrected
+Kluyveromyces lactis	ACGGATTTGATTAGGTATGTGGTGT	Fungi (Ascomycota)	TeloBase	corrected
+Yarrowia lipolytica	TTAGTCAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Pichia pastoris	TTGGGTGCTGTGTGGGT	Fungi (Ascomycota)	TeloBase	confirm
+Neurospora crassa	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Aspergillus nidulans	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Aspergillus fumigatus	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Magnaporthe oryzae	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Fusarium oxysporum	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Trichoderma reesei	TTAGGG	Fungi (Ascomycota)	TeloBase	confirm
+Ustilago maydis	TTAGGG	Fungi (Basidiomycota)	TeloBase	confirm
+Cryptococcus neoformans	TTAGGG	Fungi (Basidiomycota)	TeloBase	confirm
+Coprinus cinereus	TTAGGG	Fungi (Basidiomycota)	TeloBase	confirm
+Chlamydomonas reinhardtii	TTTTAGGG	Green alga	Petracek et al. 1990	unchanged
+Caenorhabditis elegans	TTAGGC	Nematode	Wicky et al. 1996	unchanged
+Caenorhabditis briggsae	TTAGGC	Nematode	TeloBase	confirm
+Bombyx mori	TTAGG	Insect	Okazaki et al. 1993	unchanged
+Apis mellifera	TTAGG	Insect	TeloBase	confirm
+Tribolium castaneum	TCAGG	Insect	TeloBase	confirm
+Locusta migratoria	TTAGG	Insect	TeloBase	confirm
+Strongylocentrotus purpuratus	TTAGGG	Echinoderm	TeloBase	confirm
+Crassostrea gigas	TTAGGG	Mollusc	TeloBase	confirm
+Daphnia pulex	TTAGG	Crustacean	Schumpert et al. 2015	corrected
+Hydra vulgaris	TTAGGG	Cnidarian	TeloBase	confirm
+Nematostella vectensis	TTAGGG	Cnidarian	TeloBase	confirm
+Homo sapiens	TTAGGG	Vertebrate	Moyzis et al. 1988	unchanged
+Mus musculus	TTAGGG	Vertebrate	TeloBase	confirm
+Bos taurus	TTAGGG	Vertebrate	TeloBase	confirm
+Ornithorhynchus anatinus	TTAGGG	Vertebrate	TeloBase	confirm
+Gallus gallus	TTAGGG	Vertebrate	TeloBase	confirm
+Anolis carolinensis	TTAGGG	Vertebrate	TeloBase	confirm
+Xenopus laevis	TTAGGG	Vertebrate	TeloBase	confirm
+Danio rerio	TTAGGG	Vertebrate	TeloBase	confirm
+Petromyzon marinus	TTAGGG	Vertebrate	TeloBase	confirm

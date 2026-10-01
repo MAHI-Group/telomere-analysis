@@ -1,79 +1,144 @@
-import pandas as pd
+import argparse
+import os
+import time
+import urllib.parse
+
 import matplotlib.pyplot as plt
+import pandas as pd
+import requests
 from rdkit import Chem
-from rdkit.Chem import Descriptors, Lipinski
+from rdkit.Chem import Crippen, Descriptors, Lipinski, rdMolDescriptors
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
-# 1. Complete Molecule Dataset (Small Molecules & Natural)
-compounds = [
-    # --- NATURAL ---
-    {"Name": "Berberine", "Type": "Natural", "Target": "Telomere (G4)", "SMILES": "COc1ccc2c(c1)C[n+]3ccc4c(c3C2)cc5c(c4)OCO5"},
-    {"Name": "EGCG", "Type": "Natural", "Target": "Non-Telomere", "SMILES": "C1[C@H]([C@H](OC2=CC(=CC(=C21)O)O)C3=CC(=C(C(=C3)O)O)O)OC(=O)C4=CC(=C(C(=C4)O)O)O"},
-    {"Name": "Curcumin", "Type": "Natural", "Target": "Non-Telomere", "SMILES": "COC1=C(C=CC(=C1)/C=C/C(=O)CC(=O)/C=C/C2=CC(=C(C=C2)O)OC)O"},
-    {"Name": "Resveratrol", "Type": "Natural", "Target": "Non-Telomere", "SMILES": "Oc1cc(O)cc(\\C=C\\c2ccc(O)cc2)c1"},
-    {"Name": "Camptothecin", "Type": "Natural", "Target": "Non-Telomere", "SMILES": "CC[C@@]1(C2=C(COC1=O)C(=O)N3CC4=CC5=CC=CC=C5N=C4C3=C2)O"},
+PUG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
+COMPOUNDS = "compounds.tsv"
+CACHE = "results/compounds_resolved.tsv"
+COLOURS = {"Synthetic Telomere (G4)": "#e74c3c", "Synthetic Non-telomere": "#3498db",
+           "Natural Telomere (G4)": "#f1c40f", "Natural Non-telomere": "#2ecc71"}
 
-    # --- SYNTHETIC G4 LIGANDS ---
-    {"Name": "BRACO-19", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "CN(C)CCCN1c2cc(cc(c2c3ccc(cc13)NC(=O)c4ccc(cc4)N(C)C)NC(=O)c5ccc(cc5)N(C)C)NC(=O)c6ccc(cc6)N(C)C"},
-    {"Name": "RHPS4", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "C[N+]4=C2C3=C(C=C(C)C=C3C5=C4C=CC(F)=C5)N(C)C1=CC=C(F)C=C12"},
-    {"Name": "Pyridostatin", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "NCCOC1=CC(C(Nc2nc3ccccc3c(OCCN)n2)=O)=NC(C(Nc4nc5ccccc5c(OCCN)n4)=O)=C1"},
-    {"Name": "Telomestatin", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "Cc1oc(-c2nc(-c3nc(-c4nc(-c5nc(-c6nc(-c7nc(C)oc7C)co6)co5)co4)co3)co2)co1"},
-    {"Name": "GTC365", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "CC1=CC2=C(C=C1)N(C3=C2C=C(C=C3)C(=O)N)CCCNC(=N)N"},
-    {"Name": "RG260", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "O=C(NC(NC1=CC=C(OC2=NC=C(Br)C=N2)C(C)=C1)=O)C3=CC=CC=C3NC([C@@H](N)C)=O"},
-    {"Name": "TMPyP4", "Type": "Synthetic", "Target": "Telomere (G4)", "SMILES": "C[n+]1ccc(cc1)c2c3ccc(n3)c(c4ccc(n4)c(c5ccc(n5)c(c6ccc2n6)c7cc[n+](cc7)C)c8cc[n+](cc8)C)c9cc[n+](cc9)C"},
 
-    # --- SYNTHETIC ENZYME/PATHWAY INHIBITORS ---
-    {"Name": "BIBR1532", "Type": "Synthetic", "Target": "Non-Telomere", "SMILES": "CC(=CC(=O)NC1=CC=CC=C1C(=O)O)C2=CC3=CC=CC=C3C=C2"},
-    {"Name": "MST-312", "Type": "Synthetic", "Target": "Non-Telomere", "SMILES": "O=C(NC1=CC=CC(NC(C2=CC=CC(O)=C2O)=O)=C1)C3=CC=CC(O)=C3O"},
-    {"Name": "AG 1478", "Type": "Synthetic", "Target": "Non-Telomere", "SMILES": "COC1=C(C=C2C(=C1)N=CN=C2NC3=CC=CC=C3)OC.Cl"},
-    {"Name": "VE-821", "Type": "Synthetic", "Target": "Non-Telomere", "SMILES": "CS(=O)(=O)C1=CC=C(C=C1)C2=NC(=C(N=C2N)C3=CC=CC=C3)C4=CC=C(C=C4)S(=O)(=O)C"},
-    {"Name": "Ceralasertib", "Type": "Synthetic", "Target": "Non-Telomere", "SMILES": "C[C@@H]1CN(CCO1)C2=NC(=C(C=N2)C3=CC=C(C=C3)S(=O)(=O)C4CC4)N"}
-]
+def pubchem_lookup(query):
+    q = urllib.parse.quote(query, safe="")
+    r = requests.get(f"{PUG}/compound/name/{q}/cids/JSON", timeout=30)
+    if r.status_code == 404:
+        return None
+    r.raise_for_status()
+    cids = r.json()["IdentifierList"]["CID"]
+    cid = cids[0]
+    time.sleep(0.25)
+    for prop in ("SMILES", "IsomericSMILES"):
+        r = requests.get(f"{PUG}/compound/cid/{cid}/property/{prop},MolecularFormula,Title/JSON",
+                         timeout=30)
+        if r.ok:
+            break
+    r.raise_for_status()
+    props = r.json()["PropertyTable"]["Properties"][0]
+    smiles = next(v for k, v in props.items() if k.endswith("SMILES"))
+    time.sleep(0.25)
+    return {"cid": cid, "n_cids_for_name": len(cids), "pubchem_title": props.get("Title", ""),
+            "pubchem_formula": props["MolecularFormula"], "smiles": smiles}
 
-# 2. Calculation
-data = []
-for cp in compounds:
-    mol = Chem.MolFromSmiles(cp["SMILES"])
-    if mol:
-        data.append({
-            "Name": cp["Name"],
-            "Category": f"{cp['Type']} {cp['Target']}",
-            "MW": Descriptors.MolWt(mol),
-            "LogP": Descriptors.MolLogP(mol),
-            "Aromatic": Lipinski.NumAromaticRings(mol)
-        })
 
-df = pd.DataFrame(data)
+def resolve(compounds, refresh):
+    cache = {}
+    if os.path.isfile(CACHE) and not refresh:
+        cache = pd.read_csv(CACHE, sep="\t", dtype=str).set_index("name").to_dict("index")
 
-# 3. Figure Generation
-plt.figure(figsize=(13, 8))
-colors = {"Synthetic Telomere (G4)": "#e74c3c", "Synthetic Non-Telomere": "#3498db", 
-          "Natural Telomere (G4)": "#f1c40f", "Natural Non-Telomere": "#2ecc71"}
+    rows, missing = [], []
+    for c in compounds.itertuples():
+        override = c.smiles_override if isinstance(c.smiles_override, str) and c.smiles_override else None
+        if override:
+            if not (isinstance(c.override_source, str) and c.override_source):
+                raise ValueError(f"{c.name}: smiles_override needs override_source")
+            rows.append({"name": c.name, "cid": "", "n_cids_for_name": "", "pubchem_title": "",
+                         "pubchem_formula": "", "smiles": override, "smiles_source": c.override_source})
+            continue
+        hit = cache.get(c.name)
+        if hit is None or hit.get("smiles_source") != "PubChem":
+            hit = pubchem_lookup(c.pubchem_query)
+            if hit is None:
+                missing.append(c.name)
+                continue
+            hit["smiles_source"] = "PubChem"
+        rows.append({"name": c.name, **{k: hit[k] for k in
+                     ("cid", "n_cids_for_name", "pubchem_title", "pubchem_formula", "smiles", "smiles_source")}})
 
-for cat, color in colors.items():
-    subset = df[df["Category"] == cat]
-    plt.scatter(subset["MW"], subset["LogP"], s=subset["Aromatic"]*100, 
-                c=color, label=cat, edgecolors='black', alpha=0.7)
+    if missing:
+        raise SystemExit(
+            "Not found in PubChem by name: " + ", ".join(missing) +
+            f"\nAdd smiles_override and override_source for these rows in {COMPOUNDS} "
+            "(structure from the primary paper or its SI), then rerun.")
+    resolved = pd.DataFrame(rows)
+    resolved.to_csv(CACHE, sep="\t", index=False)
+    return resolved
 
-for i, row in df.iterrows():
-    plt.annotate(row["Name"], (row["MW"], row["LogP"]), xytext=(5,5), textcoords='offset points', fontsize=9)
 
-plt.axvline(x=500, color='grey', linestyle='--', alpha=0.3)
-plt.axhline(y=5, color='grey', linestyle='--', alpha=0.3)
-plt.xlabel("Molecular Weight (Da)", fontsize=12)
-plt.ylabel("Lipophilicity (LogP)", fontsize=12)
-plt.title("Physicochemical Profile of All Telomere-Related Small Molecules\n(Bubble size = Aromatic Ring Count)", fontsize=14)
-plt.legend(
-    title="Molecule Classification", 
-    bbox_to_anchor=(1.05, 1), 
-    loc='upper left',
-    labelspacing=1.8,    # Increases vertical space between items
-    borderpad=1.5,       # Increases space between the legend border and content
-    handletextpad=1.2,   # Increases space between the icon and the text
-    frameon=True,
-    fontsize=11
-)
-plt.grid(True, linestyle=':', alpha=0.5)
-plt.tight_layout()
-plt.savefig("FigC_drug.pdf", bbox_inches="tight")
-plt.savefig("FigC_drug.png", dpi=300, bbox_inches="tight")
-plt.close("all")
+def descriptors(smiles):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise ValueError(f"RDKit could not parse SMILES: {smiles}")
+    parent = rdMolStandardize.LargestFragmentChooser().choose(mol)
+    return {
+        "parent_smiles": Chem.MolToSmiles(parent),
+        "parent_formula": rdMolDescriptors.CalcMolFormula(parent),
+        "formal_charge": Chem.GetFormalCharge(parent),
+        "MW": Descriptors.MolWt(parent),
+        "cLogP": Crippen.MolLogP(parent),
+        "TPSA": rdMolDescriptors.CalcTPSA(parent),
+        "HBD": Lipinski.NumHDonors(parent),
+        "HBA": Lipinski.NumHAcceptors(parent),
+        "rotatable_bonds": rdMolDescriptors.CalcNumRotatableBonds(parent),
+        "aromatic_rings": rdMolDescriptors.CalcNumAromaticRings(parent),
+    }
+
+
+def plot(df, stem):
+    fig, ax = plt.subplots(figsize=(13, 8))
+    for cat, colour in COLOURS.items():
+        sub = df[df["category"] == cat]
+        if len(sub):
+            ax.scatter(sub["MW"], sub["cLogP"], s=sub["aromatic_rings"].clip(lower=1) * 100,
+                       c=colour, label=cat, edgecolors="black", alpha=0.75)
+    texts = [ax.text(r.MW, r.cLogP, r.name, fontsize=9) for r in df.itertuples()]
+    try:
+        from adjustText import adjust_text
+        adjust_text(texts, ax=ax, arrowprops=dict(arrowstyle="-", color="grey", lw=0.5))
+    except ImportError:
+        pass
+    ax.axvline(500, color="grey", ls="--", alpha=0.4)
+    ax.axhline(5, color="grey", ls="--", alpha=0.4)
+    ax.set_xlabel("Molecular weight of parent structure (Da)", fontsize=12)
+    ax.set_ylabel("Calculated logP (Crippen)", fontsize=12)
+    ax.legend(title="Bubble size = aromatic rings", bbox_to_anchor=(1.02, 1), loc="upper left",
+              labelspacing=1.5, frameon=True, fontsize=10)
+    ax.grid(True, ls=":", alpha=0.5)
+    fig.savefig(f"{stem}.pdf", bbox_inches="tight")
+    fig.savefig(f"{stem}.png", dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--refresh", action="store_true", help="re-query PubChem, ignoring the cache")
+    args = parser.parse_args()
+    os.makedirs("results", exist_ok=True)
+    os.makedirs("figures", exist_ok=True)
+
+    compounds = pd.read_csv(COMPOUNDS, sep="\t", dtype=str).fillna("")
+    resolved = resolve(compounds, args.refresh)
+    desc = pd.DataFrame([descriptors(s) for s in resolved["smiles"]])
+    df = pd.concat([compounds[["name", "origin", "target"]].reset_index(drop=True),
+                    resolved.drop(columns="name"), desc], axis=1)
+    df["category"] = df["origin"] + " " + df["target"]
+    if len(df) != len(compounds):
+        raise RuntimeError("compound count mismatch")
+    df.to_csv("results/drug_descriptors.csv", index=False, float_format="%.3f")
+    plot(df, "figures/FigS2_drug_descriptors")
+
+    print(f"{len(df)} compounds")
+    print(df[["name", "cid", "pubchem_title", "pubchem_formula", "parent_formula",
+              "formal_charge", "MW", "cLogP", "aromatic_rings"]].to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()

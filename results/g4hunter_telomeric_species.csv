@@ -1,0 +1,50 @@
+species,motif,clade,g4h_mean
+Tetrahymena thermophila,TTGGGG,Ciliate,2.667
+Oxytricha nova,TTTTGGGG,Ciliate,2.000
+Euplotes aediculatus,TTTTGGGG,Ciliate,2.000
+Stylonychia mytilus,TTTTGGGG,Ciliate,2.000
+Giardia lamblia,TAGGG,Other protist,1.800
+Candida glabrata,CTGGGTGCTGTGGGGT,Fungi (Ascomycota),1.555
+Paramecium tetraurelia,TTGGGT,Ciliate,1.500
+Trypanosoma cruzi,TTAGGG,Kinetoplastid,1.500
+Trypanosoma brucei,TTAGGG,Kinetoplastid,1.500
+Leishmania major,TTAGGG,Kinetoplastid,1.500
+Cryptococcus neoformans,TTAGGG,Fungi (Basidiomycota),1.500
+Trichoderma reesei,TTAGGG,Fungi (Ascomycota),1.500
+Fusarium oxysporum,TTAGGG,Fungi (Ascomycota),1.500
+Aspergillus fumigatus,TTAGGG,Fungi (Ascomycota),1.500
+Magnaporthe oryzae,TTAGGG,Fungi (Ascomycota),1.500
+Neurospora crassa,TTAGGG,Fungi (Ascomycota),1.500
+Aspergillus nidulans,TTAGGG,Fungi (Ascomycota),1.500
+Anolis carolinensis,TTAGGG,Vertebrate,1.500
+Xenopus laevis,TTAGGG,Vertebrate,1.500
+Danio rerio,TTAGGG,Vertebrate,1.500
+Gallus gallus,TTAGGG,Vertebrate,1.500
+Petromyzon marinus,TTAGGG,Vertebrate,1.500
+Mus musculus,TTAGGG,Vertebrate,1.500
+Strongylocentrotus purpuratus,TTAGGG,Echinoderm,1.500
+Ustilago maydis,TTAGGG,Fungi (Basidiomycota),1.500
+Coprinus cinereus,TTAGGG,Fungi (Basidiomycota),1.500
+Bos taurus,TTAGGG,Vertebrate,1.500
+Ornithorhynchus anatinus,TTAGGG,Vertebrate,1.500
+Homo sapiens,TTAGGG,Vertebrate,1.500
+Hydra vulgaris,TTAGGG,Cnidarian,1.500
+Nematostella vectensis,TTAGGG,Cnidarian,1.500
+Crassostrea gigas,TTAGGG,Mollusc,1.500
+Plasmodium falciparum,TTTAGGG,Other protist,1.277
+Pichia pastoris,TTGGGTGCTGTGTGGGT,Fungi (Ascomycota),1.182
+Saccharomyces cerevisiae,TGTGGGTGTGGTGTG,Fungi (Ascomycota),1.133
+Saccharomyces castellii,TCTGGGTG,Fungi (Ascomycota),1.125
+Chlamydomonas reinhardtii,TTTTAGGG,Green alga,1.125
+Schizosaccharomyces pombe,TTACAGGG,Fungi (Ascomycota),1.000
+Yarrowia lipolytica,TTAGTCAGGG,Fungi (Ascomycota),0.900
+Bombyx mori,TTAGG,Insect,0.800
+Locusta migratoria,TTAGG,Insect,0.800
+Daphnia pulex,TTAGG,Crustacean,0.800
+Apis mellifera,TTAGG,Insect,0.800
+Tribolium castaneum,TCAGG,Insect,0.600
+Kluyveromyces lactis,ACGGATTTGATTAGGTATGTGGTGT,Fungi (Ascomycota),0.560
+Caenorhabditis elegans,TTAGGC,Nematode,0.500
+Caenorhabditis briggsae,TTAGGC,Nematode,0.500
+Candida tropicalis,ACGGATGTCACGATCATTGGTGT,Fungi (Ascomycota),0.302
+Candida albicans,ACGGATGTCTAACTTCTTGGTGT,Fungi (Ascomycota),0.258
