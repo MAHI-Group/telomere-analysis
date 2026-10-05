@@ -167,6 +167,13 @@ def main():
     plot_htert(fig.add_subplot(gs[0]), tracks, centre)
     plot_htert(fig.add_subplot(gs[1]), tracks, centre, zoom=True)
     save(fig, "figures/Fig_htert_promoter")
+    fig, ax = plt.subplots(figsize=(14, 5))
+    plot_htert(ax, tracks, centre)
+    save(fig, "figures/Fig_htert_promoter_full")
+
+    fig, ax = plt.subplots(figsize=(14, 4.5))
+    plot_htert(ax, tracks, centre, zoom=True)
+    save(fig, "figures/Fig_htert_promoter_zoom")
 
     fig = plt.figure(figsize=(14, 17))
     gs = fig.add_gridspec(3, 1, height_ratios=[1.3, 1, 0.85], hspace=0.35)
