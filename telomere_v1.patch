@@ -1,0 +1,216 @@
+diff --git a/README.md b/README.md
+index 4cf055e..fa0985c 100644
+--- a/README.md
++++ b/README.md
+@@ -1,26 +1,55 @@
+ # telomere-analysis
+ 
+-Illustrative computational analyses for a review on telomere biology (Maji, Dash, Chattopadhyay; Biochimie, in revision). All outputs are predictions, not experimental measurements.
++Code and data for the illustrative computational analyses in Maji N, Dash T, Chattopadhyay S. "Higher Order Telomeric Architecture Safeguarding Telomere Integrity: Impact on Human Diseases" (Biochimie, in revision). All outputs are sequence-based predictions, not experimental measurements. The methods are described in Supplementary Methods S1-S6 of the paper and summarised below.
++
++## Figures
++
++| Output (`figures/`, PDF and PNG) | In the paper | Produced by |
++| --- | --- | --- |
++| `Fig1_nt_motif_similarity` | Figure 1 | `nt_emb_extr.py` |
++| `Fig3_g4hunter_motifs` | Figure 3 | `g4hunter.py` |
++| `Fig5_htert_promoter` | Figure 5 | `g4hunter.py` |
++| `Fig7_htert_hotspots` | Figure 7 | `g4hunter.py` |
++| `FigS1_nt_motif_umap` | Supplementary Figure 1 | `nt_emb_extr.py --umap` |
++| `FigS2_drug_descriptors` | Supplementary Figure 2 | `drug.py` |
++
++Figures 2, 4 and 6 of the paper are schematic illustrations and are not produced here.
+ 
+ ## Analyses
+ 
+-- **G4Hunter on telomeric motifs.** Telomeric repeat motifs from 49 eukaryotic species (19 distinct motifs; `species.tsv`) are tiled to 600 nt and scored with G4Hunter (Bedrat et al., NAR 2016).
+-- **G4Hunter on the hTERT proximal promoter.** A 400-nt window (chr5:1,294,991-1,295,390, GRCh38; -2 to -401 relative to the TERT ATG) is scored on the G-rich template (plus) strand, for the wild type and the C228T (-124C>T) and C250T (-146C>T) hotspot mutations, modelled as G>A on the plus strand.
+-- **DNA language-model embeddings.** Each distinct motif is tiled to 1,200 nt and embedded with [Nucleotide Transformer v2](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species) (500M, multi-species; attention-masked mean pooling of the final layer). Species that share a motif share an embedding, so only the 19 distinct motifs are embedded. Similarity is shown as a cosine-similarity heatmap with average-linkage clustering.
+-- **Physicochemical descriptors.** Structures of 17 small molecules are retrieved from PubChem by name (CIDs recorded in `results/compounds_resolved.tsv`), reduced to the parent structure (largest fragment), and described with RDKit.
++- **DNA language-model similarity** (Figure 1, Supplementary Figure 1; Supplementary Methods S1). The 49-species panel (`species.tsv`, Supplementary Table S1) contains 19 distinct telomeric motifs. Each motif is tiled to 1,200 nt and embedded with [Nucleotide Transformer v2](https://huggingface.co/InstaDeepAI/nucleotide-transformer-v2-500m-multi-species) (500M, multi-species) by attention-masked mean pooling of the final layer. Species that share a motif share an embedding, so only the 19 distinct motifs are embedded. Figure 1 shows pairwise cosine similarity with average-linkage clustering (optimal leaf ordering); Supplementary Figure 1 is a UMAP of the same embeddings (cosine metric, 5 neighbours, minimum distance 0.5, seed 42).
++- **G4Hunter on telomeric motifs** (Figure 3; Supplementary Methods S2). Each motif is tiled to 600 nt and scored on the G-rich strand with G4Hunter (Bedrat et al., 2016). Supplementary Table S2 of the paper compares these predictions with published experimental evidence.
++- **G4Hunter on the hTERT proximal promoter** (Figures 5 and 7; Supplementary Methods S3). A 400-nt window (GRCh38 chr5:1,294,991-1,295,390, 1-based; -2 to -401 relative to the TERT ATG) is scored with 25-nt sliding windows on the plus strand, which is the template strand of TERT and is G-rich in this region. The C228T (-124C>T) and C250T (-146C>T) hotspot mutations are modelled as G>A on the plus strand, singly and together. Figure 7 enlarges -181 to -89.
++- **Physicochemical descriptors** (Supplementary Figure 2; Supplementary Methods S5). Structures of 17 small molecules are retrieved from PubChem by name (CIDs recorded), reduced to the parent structure (largest fragment) and described with RDKit: molecular weight, Crippen logP, TPSA, hydrogen-bond donors and acceptors, rotatable bonds and aromatic rings.
+ 
+ ## Files
+ 
+ | File | Description |
+ | --- | --- |
+-| `species.tsv` | Species panel: motif (5' to 3', G-rich strand), clade, primary source, verification status |
++| `species.tsv` | Species panel: motif (5' to 3', G-rich strand), clade, source and status (Supplementary Table S1) |
+ | `compounds.tsv` | Compound list, PubChem query names, optional SMILES overrides with their source |
++| `htert_promoter.json` | hTERT promoter window (plus and minus strands) and hotspot positions |
+ | `panel.py` | Shared helpers (panel loading, tiling, labels, colours) |
+-| `g4hunter.py` | G4Hunter on telomeric motifs and the hTERT promoter |
+-| `nt_emb_extr.py` | Nucleotide Transformer embeddings and similarity figure (optional UMAP) |
++| `nt_emb_extr.py` | Nucleotide Transformer embeddings, similarity figure and optional UMAP |
++| `g4hunter.py` | G4Hunter on the telomeric motifs and the hTERT promoter |
+ | `drug.py` | PubChem retrieval and RDKit descriptors |
+ | `download_ucsc.py` | Fetches the hTERT promoter window from the UCSC REST API into `htert_promoter.json` |
+-| `check_results.py` | Consistency checks on the panel and all outputs |
++| `check_results.py` | Consistency checks on the panel, results and figures |
++| `env.yml` | Conda environment |
++
++## Results
++
++| File (`results/`) | Contents | In the paper |
++| --- | --- | --- |
++| `g4hunter_telomeric_motifs.csv` | G4Hunter mean score per distinct motif | Figure 3, Supplementary Table S2 |
++| `g4hunter_telomeric_species.csv` | G4Hunter mean score per species | |
++| `htert_g4hunter_tracks.csv` | 25-nt window scores for the wild type and the three mutants | Figures 5 and 7 |
++| `htert_hotspot_scores.csv` | Scores of the windows centred on each hotspot | Supplementary Table S3 |
++| `motif_embeddings.npz` | Embeddings (19 x 1,024), motif order, model name and tile length | Figure 1 |
++| `motif_cosine_similarity.csv` | Cosine-similarity matrix | Figure 1 |
++| `motif_umap.csv` | UMAP coordinates | Supplementary Figure 1 |
++| `compounds_resolved.tsv` | PubChem CID, title, formula and SMILES per compound | Supplementary Table S5 |
++| `drug_descriptors.csv` | Parent-structure descriptors | Supplementary Figure 2, Supplementary Table S5 |
+ 
+ ## Reproducing
+ 
+@@ -30,45 +59,38 @@ conda activate nt-env
+ pip install rdkit
+ 
+ python g4hunter.py
+-python nt_emb_extr.py
++python nt_emb_extr.py --umap
+ python drug.py
+ python check_results.py
+ ```
+ 
+-`nt_emb_extr.py` needs a GPU for reasonable speed (about a minute on 24 GB) and caches embeddings in `results/motif_embeddings.npz`; pass `--recompute` to ignore the cache and `--umap` for an additional UMAP of the distinct motifs. `drug.py` caches PubChem look-ups in `results/compounds_resolved.tsv`; pass `--refresh` to re-query. `download_ucsc.py` only needs rerunning to regenerate `htert_promoter.json`.
+-
+-## Outputs
+-
+-| Output | Use |
+-| --- | --- |
+-| `figures/Fig_insilico_g4` | Main in silico figure: (A) motif scores, (B) hTERT promoter, (C) hotspot zoom |
+-| `figures/Fig_g4hunter_motifs`, `figures/Fig_htert_promoter` | The same panels as separate files |
+-| `figures/FigS1_nt_motif_similarity` | Supplementary Figure S1 |
+-| `figures/FigS2_drug_descriptors` | Supplementary Figure S2 |
+-| `results/g4hunter_telomeric_motifs.csv`, `results/g4hunter_telomeric_species.csv` | G4Hunter scores (Tables S2 and S4) |
+-| `results/htert_g4hunter_tracks.csv`, `results/htert_hotspot_scores.csv` | hTERT window scores |
+-| `results/motif_embeddings.npz`, `results/motif_cosine_similarity.csv` | Embeddings (19 x 1,024) and similarity matrix |
+-| `results/compounds_resolved.tsv`, `results/drug_descriptors.csv` | Structures with PubChem CIDs, and descriptors |
++`nt_emb_extr.py` caches embeddings in `results/motif_embeddings.npz` and reuses them while the motifs in `species.tsv` are unchanged; recomputing them (`--recompute`) needs a GPU for reasonable speed (about a minute on 24 GB). `drug.py` caches PubChem look-ups in `results/compounds_resolved.tsv`; `--refresh` re-queries PubChem. `download_ucsc.py` is needed only to regenerate `htert_promoter.json`. `check_results.py` exits with a non-zero status if any check fails.
+ 
+ ## Environment
+ 
+-Ubuntu, single NVIDIA GPU (24 GB). Requires `transformers==4.44.2` (the NT v2 custom code is incompatible with transformers 5.x); weights are loaded in fp32 with `torch.autocast` for the forward pass.
++Ubuntu, single NVIDIA GPU (24 GB), Python 3.11. Requires `transformers==4.44.2` (the Nucleotide Transformer v2 custom code is incompatible with transformers 5.x); weights are loaded in fp32 and `torch.autocast` (fp16) is used for the forward pass.
+ 
+ ## Limitations
+ 
+-- The embeddings reflect the sequence of the repeat unit only; they carry no information on phylogeny, repeat heterogeneity, telomere length or chromatin.
+-- G4Hunter is a sequence-based propensity score; the |score| > 1.0 cut-off is heuristic, and the mean score of a strictly periodic tract is fixed by the composition of its repeat unit.
+-- The hTERT analysis predicts local changes in G-richness only. The established mechanism by which C228T and C250T activate TERT is the creation of ETS/GABP binding sites (Bell et al., Science 2015).
+-- Descriptors summarise general drug-likeness and do not predict G4 binding or activity.
++- The embeddings reflect the sequence of the repeat unit only; they carry no information on phylogeny, repeat heterogeneity within an array, telomere length or chromatin. Similarity in this representation is not evidence of common ancestry or convergent evolution.
++- G4Hunter is a sequence-based propensity score. The |score| > 1.0 threshold is a heuristic, and the mean score of a tiled repeat is fixed by the composition of the repeat unit. Repeats with only GG tracts (insects, nematodes) score below 1.0, yet fold into two-tetrad G-quadruplexes in vitro.
++- The predicted reduction in G4 propensity at the hTERT hotspots is a local sequence effect and does not test G4 destabilisation in cells. The established mechanism of hTERT activation by these mutations is the creation of ETS binding sites recognised by GABP (Bell et al., 2015).
++- The physicochemical descriptors summarise general drug-likeness only and do not predict G4 binding or activity. Calculated logP is not meaningful for the permanently charged cations berberine, RHPS4 and TMPyP4.
++- Motifs whose source is TeloBase in `species.tsv` should be checked against [TeloBase](https://cfb.ceitec.muni.cz/telobase/) before reuse; several fungal motifs are reported differently across sources.
+ 
+ ## References
+ 
+-- Dalla-Torre H. et al. Nucleotide Transformer: building and evaluating robust foundation models for human genomics. *Nat. Methods* 22, 287-297 (2025).
+-- Bedrat A., Lacroix L., Mergny J.-L. Re-evaluation of G-quadruplex propensity with G4Hunter. *Nucleic Acids Res.* 44, 1746-1759 (2016).
+-- Lyčka M. et al. TeloBase: a community-curated database of telomere sequences across the tree of life. *Nucleic Acids Res.* 52, D311-D321 (2024).
+-- Horn S. et al. TERT promoter mutations in familial and sporadic melanoma. *Science* 339, 959-961 (2013).
+-- Huang F. W. et al. Highly recurrent TERT promoter mutations in human melanoma. *Science* 339, 957-959 (2013).
+-- Bell R. J. A. et al. The transcription factor GABP selectively binds and activates the mutant TERT promoter in cancer. *Science* 348, 1036-1039 (2015).
+-- McInnes L., Healy J., Melville J. UMAP: Uniform Manifold Approximation and Projection for dimension reduction. arXiv:1802.03426 (2018).
++- Dalla-Torre H, et al. Nucleotide Transformer: building and evaluating robust foundation models for human genomics. Nat Methods 22, 287-297 (2025).
++- Bedrat A, Lacroix L, Mergny J-L. Re-evaluation of G-quadruplex propensity with G4Hunter. Nucleic Acids Res 44, 1746-1759 (2016).
++- Lyčka M, et al. TeloBase: a community-curated database of telomere sequences across the tree of life. Nucleic Acids Res 52, D311-D321 (2024).
++- Tran PLT, Mergny J-L, Alberti P. Stability of telomeric G-quadruplexes. Nucleic Acids Res 39, 3282-3294 (2011).
++- McInnes L, Healy J, Melville J. UMAP: Uniform Manifold Approximation and Projection for dimension reduction. arXiv:1802.03426 (2018).
++- Horn S, et al. TERT promoter mutations in familial and sporadic melanoma. Science 339, 959-961 (2013).
++- Huang FW, et al. Highly recurrent TERT promoter mutations in human melanoma. Science 339, 957-959 (2013).
++- Bell RJA, et al. The transcription factor GABP selectively binds and activates the mutant TERT promoter in cancer. Science 348, 1036-1039 (2015).
++- Kim S, et al. PubChem 2023 update. Nucleic Acids Res 51, D1373-D1380 (2023).
+ - Landrum G. RDKit: open-source cheminformatics. https://www.rdkit.org
+-- Kim S. et al. PubChem 2023 update. *Nucleic Acids Res.* 51, D1373-D1380 (2023).
++
++## Citation
++
++If you use this code or data, please cite the paper above and release v1.0 of this repository.
+diff --git a/check_results.py b/check_results.py
+index 4f98185..7a368bd 100644
+--- a/check_results.py
++++ b/check_results.py
+@@ -11,6 +11,8 @@ EXPECTED_G4H = {"TTGGGG": 2.667, "TTTTGGGG": 2.000, "TAGGG": 1.800, "TTAGGG": 1.
+                 "TCAGG": 0.600, "TTAGGC": 0.500, "CTGGGTGCTGTGGGGT": 1.555,
+                 "ACGGATGTCTAACTTCTTGGTGT": 0.258, "ACGGATGTCACGATCATTGGTGT": 0.302,
+                 "ACGGATTTGATTAGGTATGTGGTGT": 0.560}
++FIGURES = ["Fig1_nt_motif_similarity", "Fig3_g4hunter_motifs", "Fig5_htert_promoter",
++           "Fig7_htert_hotspots", "FigS1_nt_motif_umap", "FigS2_drug_descriptors"]
+ 
+ 
+ def check(cond, msg):
+@@ -63,6 +65,10 @@ def main():
+     else:
+         print("skip  results/drug_descriptors.csv not found")
+ 
++    for stem in FIGURES:
++        ok &= check(all(os.path.isfile(f"figures/{stem}.{ext}") for ext in ("pdf", "png")),
++                    f"figures/{stem} (.pdf, .png) present")
++
+     raise SystemExit(0 if ok else 1)
+ 
+ 
+diff --git a/g4hunter.py b/g4hunter.py
+index cd64ed7..9e89d89 100644
+--- a/g4hunter.py
++++ b/g4hunter.py
+@@ -160,31 +160,15 @@ def main():
+ 
+     fig, ax = plt.subplots(figsize=(11, 8))
+     plot_motifs(ax, per_motif, labels, clades)
+-    save(fig, "figures/Fig_g4hunter_motifs")
++    save(fig, "figures/Fig3_g4hunter_motifs")
+ 
+-    fig = plt.figure(figsize=(14, 9))
+-    gs = fig.add_gridspec(2, 1, height_ratios=[1, 0.85], hspace=0.35)
+-    plot_htert(fig.add_subplot(gs[0]), tracks, centre)
+-    plot_htert(fig.add_subplot(gs[1]), tracks, centre, zoom=True)
+-    save(fig, "figures/Fig_htert_promoter")
+     fig, ax = plt.subplots(figsize=(14, 5))
+     plot_htert(ax, tracks, centre)
+-    save(fig, "figures/Fig_htert_promoter_full")
++    save(fig, "figures/Fig5_htert_promoter")
+ 
+     fig, ax = plt.subplots(figsize=(14, 4.5))
+     plot_htert(ax, tracks, centre, zoom=True)
+-    save(fig, "figures/Fig_htert_promoter_zoom")
+-
+-    fig = plt.figure(figsize=(14, 17))
+-    gs = fig.add_gridspec(3, 1, height_ratios=[1.3, 1, 0.85], hspace=0.35)
+-    axes = [fig.add_subplot(gs[i]) for i in range(3)]
+-    plot_motifs(axes[0], per_motif, labels, clades)
+-    plot_htert(axes[1], tracks, centre)
+-    plot_htert(axes[2], tracks, centre, zoom=True)
+-    for ax, letter in zip(axes, "ABC"):
+-        ax.text(-0.02, 1.04, letter, transform=ax.transAxes, fontsize=18, fontweight="bold",
+-                ha="right", va="bottom")
+-    save(fig, "figures/Fig_insilico_g4")
++    save(fig, "figures/Fig7_htert_hotspots")
+ 
+     print(per_motif[["motif", "n_species", "g4h_mean", "above_threshold"]].to_string(index=False))
+     print()
+diff --git a/nt_emb_extr.py b/nt_emb_extr.py
+index 7336c08..b48b625 100644
+--- a/nt_emb_extr.py
++++ b/nt_emb_extr.py
+@@ -145,10 +145,10 @@ def main():
+ 
+     labels = motif_labels(df)
+     clades = motif_clade(df)
+-    plot_similarity(motifs, emb, labels, clades, "figures/FigS1_nt_motif_similarity")
++    plot_similarity(motifs, emb, labels, clades, "figures/Fig1_nt_motif_similarity")
+     if args.umap:
+         n_neighbors = min(args.n_neighbors, len(motifs) - 1)
+-        plot_umap(motifs, emb, labels, clades, "figures/FigS1b_nt_motif_umap",
++        plot_umap(motifs, emb, labels, clades, "figures/FigS1_nt_motif_umap",
+                   n_neighbors, args.min_dist)
+         print(f"UMAP: n_neighbors={n_neighbors}, min_dist={args.min_dist}, cosine, seed={SEED}")
+ 
