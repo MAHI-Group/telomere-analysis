@@ -13,8 +13,10 @@ from rdkit.Chem.MolStandardize import rdMolStandardize
 PUG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 COMPOUNDS = "compounds.tsv"
 CACHE = "results/compounds_resolved.tsv"
-COLOURS = {"Synthetic Telomere (G4)": "#e74c3c", "Synthetic Non-telomere": "#3498db",
-           "Natural Telomere (G4)": "#f1c40f", "Natural Non-telomere": "#2ecc71"}
+#COLOURS = {"Synthetic Telomere (G4)": "#e74c3c", "Synthetic Non-telomere": "#3498db",
+#           "Natural Telomere (G4)": "#f1c40f", "Natural Non-telomere": "#2ecc71"}
+COLOURS = {"Synthetic G4-directed": "#e74c3c", "Synthetic Other mechanisms": "#3498db",
+           "Natural G4-directed": "#f1c40f", "Natural Other mechanisms": "#2ecc71"}
 
 
 def pubchem_lookup(query):

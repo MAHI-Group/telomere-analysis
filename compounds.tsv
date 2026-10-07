@@ -1,18 +1,18 @@
 name	pubchem_query	origin	target	smiles_override	override_source
-Berberine	berberine	Natural	Telomere (G4)		
-EGCG	epigallocatechin gallate	Natural	Non-telomere		
-Curcumin	curcumin	Natural	Non-telomere		
-Resveratrol	resveratrol	Natural	Non-telomere		
-Camptothecin	camptothecin	Natural	Non-telomere		
-BRACO-19	BRACO-19	Synthetic	Telomere (G4)		
-RHPS4	RHPS4	Synthetic	Telomere (G4)		
-Pyridostatin	pyridostatin	Synthetic	Telomere (G4)		
-Telomestatin	telomestatin	Synthetic	Telomere (G4)		
-GTC365	GTC365	Synthetic	Telomere (G4)		
-RG260	RG260	Synthetic	Telomere (G4)		
-TMPyP4	TMPyP4 tosylate	Synthetic	Telomere (G4)		
-BIBR1532	BIBR 1532	Synthetic	Non-telomere		
-MST-312	MST-312	Synthetic	Non-telomere		
-AG 1478	tyrphostin AG 1478	Synthetic	Non-telomere		
-VE-821	VE-821	Synthetic	Non-telomere		
-Ceralasertib	ceralasertib	Synthetic	Non-telomere		
+Berberine	berberine	Natural	G4-directed		
+EGCG	epigallocatechin gallate	Natural	Other mechanisms		
+Curcumin	curcumin	Natural	Other mechanisms		
+Resveratrol	resveratrol	Natural	Other mechanisms		
+Camptothecin	camptothecin	Natural	Other mechanisms		
+BRACO-19	BRACO-19	Synthetic	G4-directed		
+RHPS4	RHPS4	Synthetic	G4-directed		
+Pyridostatin	pyridostatin	Synthetic	G4-directed		
+Telomestatin	telomestatin	Natural	G4-directed		
+GTC365	GTC365	Synthetic	G4-directed		
+RG260	RG260	Synthetic	G4-directed		
+TMPyP4	TMPyP4 tosylate	Synthetic	G4-directed		
+BIBR1532	BIBR 1532	Synthetic	Other mechanisms		
+MST-312	MST-312	Synthetic	Other mechanisms		
+AG 1478	tyrphostin AG 1478	Synthetic	Other mechanisms		
+VE-821	VE-821	Synthetic	Other mechanisms		
+Ceralasertib	ceralasertib	Synthetic	Other mechanisms		
